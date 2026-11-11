@@ -100,7 +100,8 @@ public class AuthController {
         context.setAuthentication(result);
         SecurityContextHolder.setContext(context);
         contextRepository.saveContext(context, request, response);
-        csrfTokenRepository.saveToken(null, request, response);
+        CsrfToken freshToken = csrfTokenRepository.generateToken(request);
+        csrfTokenRepository.saveToken(freshToken, request, response);
         Account account = accounts.findByEmailIgnoreCase(email)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email hoặc mật khẩu không đúng"));
         return toResponse(account);

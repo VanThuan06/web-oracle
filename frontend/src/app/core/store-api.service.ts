@@ -90,10 +90,18 @@ export class StoreApiService {
     );
   }
   login(email: string, password: string): Observable<unknown> {
-    return this.http.post(`${API}/auth/login`, { email, password }, { withCredentials: true }).pipe(tap(() => this.sessionSubject.next()));
+    return this.csrf().pipe(
+      switchMap(() => this.http.post(`${API}/auth/login`, { email, password }, { withCredentials: true })),
+      switchMap((authResp) => this.csrf().pipe(map(() => authResp))),
+      tap(() => this.sessionSubject.next())
+    );
   }
   register(fullName: string, email: string, password: string, phone?: string): Observable<unknown> {
-    return this.http.post(`${API}/auth/register`, { fullName, email, password, phone }, { withCredentials: true }).pipe(tap(() => this.sessionSubject.next()));
+    return this.csrf().pipe(
+      switchMap(() => this.http.post(`${API}/auth/register`, { fullName, email, password, phone }, { withCredentials: true })),
+      switchMap((authResp) => this.csrf().pipe(map(() => authResp))),
+      tap(() => this.sessionSubject.next())
+    );
   }
   logout(): Observable<unknown> { return this.http.post(`${API}/auth/logout`, {}, { withCredentials: true }).pipe(tap(() => this.sessionSubject.next())); }
 

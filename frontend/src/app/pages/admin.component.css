@@ -1709,41 +1709,49 @@
   gap: 16px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  padding: 14px;
-  border-radius: 8px;
-  margin: 14px 0;
+  padding: 16px;
+  border-radius: 10px;
+  margin: 16px 0;
+}
+@media (max-width: 1100px) {
+  .matrix-generator-section {
+    grid-template-columns: 1fr;
+  }
 }
 .matrix-col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
 }
 .matrix-col-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 2px;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 .matrix-heading {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #0f172a;
   white-space: nowrap;
 }
 .btn-attribute-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   color: #1d4ed8;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  flex-shrink: 0 !important;
   cursor: pointer;
   line-height: 1.4;
   transition: all 0.15s ease;

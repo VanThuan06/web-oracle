@@ -1091,7 +1091,12 @@ export class AdminComponent implements OnInit, AfterViewInit {
   }
 
   selectedPosCart(): PosCart | undefined {
-    return this.posCarts().find((item) => item.cartId === this.activeCart());
+    const carts = this.posCarts();
+    if (!carts.length) return undefined;
+    const found = carts.find((item) => item.cartId === this.activeCart());
+    if (found) return found;
+    this.activeCart.set(carts[0].cartId);
+    return carts[0];
   }
 
   // --- 4. ORDERS & RETURNS/EXCHANGES ---
@@ -1253,28 +1258,29 @@ export class AdminComponent implements OnInit, AfterViewInit {
     const type = this.currentAttributeType();
     const editing = this.editingAttribute();
 
-    const request = editing
-      ? this.api.updateAttribute(type, editing.id, {
-          name: val.name || undefined,
-          code: val.code || undefined,
-          extra: val.extra || undefined,
-          status: val.status ?? true,
-        })
-      : this.api.createAttribute(type, {
-          name: val.name || '',
-          code: val.code || undefined,
-          extra: val.extra || undefined,
-          status: val.status ?? true,
-        });
-
-    this.api.csrf().pipe(switchMap(() => request)).subscribe({
+    this.api.csrf().pipe(
+      switchMap(() => editing
+        ? this.api.updateAttribute(type, editing.id, {
+            name: val.name || undefined,
+            code: val.code || undefined,
+            extra: val.extra || undefined,
+            status: val.status ?? true,
+          })
+        : this.api.createAttribute(type, {
+            name: val.name || '',
+            code: val.code || undefined,
+            extra: val.extra || undefined,
+            status: val.status ?? true,
+          })
+      )
+    ).subscribe({
       next: () => {
-        this.notice.set(editing ? 'Đã cập nhật thuộc tính.' : 'Đã tạo thuộc tính mới.');
+        this.notice.set(editing ? 'Đã cập nhật thuộc tính thành công.' : 'Đã tạo thuộc tính mới thành công.');
         this.attributeModalOpen.set(false);
         this.loadAttributes();
         this.loadCatalogAttributes();
       },
-      error: () => this.showError('Không thể lưu thuộc tính.'),
+      error: (err) => this.showError('Không thể lưu thuộc tính.', err),
     });
   }
 
