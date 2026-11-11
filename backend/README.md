@@ -1,65 +1,86 @@
-# NewMen Store API
+# NewMen Store REST API — Phân Hệ Backend (Spring Boot 4 / Java 21)
 
-Spring Boot 4.0.6 / Java 21 backend for the NewMen men's apparel storefront and store operations. The `dev` profile is selected by default and uses an in-memory H2 database with sample products and a local demo administrator.
+Phân hệ dịch vụ REST API phía máy chủ cho hệ thống bán lẻ và quản lý chuỗi cửa hàng thời trang nam **NewMen Store**. Được phát triển trên nền tảng **Java 21 LTS** và **Spring Boot 4.0.6**.
 
-## Run locally (Windows)
+Mặc định khi chạy thử nghiệm, profile `dev` được kích hoạt và sử dụng cơ sở dữ liệu in-memory H2 với đầy đủ dữ liệu hạt giống (Seed data) cho 32 bảng, đi kèm tài khoản quản trị viên và nhân viên quầy có sẵn.
 
-From the repository root:
+---
+
+## 🚀 Khởi chạy cục bộ trên Windows
+
+Mở PowerShell tại thư mục `backend/` và thực thi:
 
 ```powershell
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-The wrapper uses installed Maven or the local Maven 3.9.16 cache and downloads the official Maven distribution when neither is available. A dependency download may still be required the first time if Maven Central is reachable.
+Maven Wrapper sẽ tự động sử dụng Maven cài sẵn trên máy hoặc bộ nhớ đệm Maven 3.9.16 cục bộ. Nếu chưa có, wrapper sẽ tự động tải phiên bản Maven chính thức.
 
-- API: `http://localhost:8188/api/v1`
-- Health: `http://localhost:8188/actuator/health`
-- Demo administrator: `admin@newmen.local` / `ChangeMe123!`
-- H2 console: `http://localhost:8188/h2-console` (JDBC URL `jdbc:h2:mem:newmen`, user `sa`, blank password)
-- Uploaded images are stored in `./uploads` relative to the backend process directory; override with `NEWMEN_UPLOAD_DIR`.
+- **Đường dẫn gốc REST API:** `http://localhost:8188/api/v1`
+- **Kiểm tra trạng thái sức khỏe (Health Check):** `http://localhost:8188/actuator/health`
+- **Tài khoản Quản trị viên mẫu:** `admin@newmen.local` / `ChangeMe123!`
+- **Bảng điều khiển cơ sở dữ liệu H2 Console:** `http://localhost:8188/h2-console`
+  - JDBC URL: `jdbc:h2:mem:newmen`
+  - User Name: `sa`
+  - Password: *(để trống)*
+- **Thư mục lưu trữ hình ảnh tải lên:** Mặc định được lưu vào thư mục `./uploads` nằm cùng cấp với thư mục chạy của backend. Có thể tùy chỉnh đường dẫn bằng biến môi trường `NEWMEN_UPLOAD_DIR`.
 
-The H2 console servlet and its security exceptions exist only while `spring.h2.console.enabled=true`; the `dev` profile enables it, and the Oracle profile leaves it denied. The demo administrator password is only for local development. Set `NEWMEN_DEMO_ADMIN_PASSWORD` before startup to replace it. Seed data is disabled outside `dev`.
+> [!NOTE]
+> Bảng điều khiển H2 Console chỉ hoạt động khi thuộc tính `spring.h2.console.enabled=true` (được bật ở profile `dev` và bị vô hiệu hóa khi chuyển sang profile `oracle`). Mật khẩu tài khoản admin mẫu chỉ dành riêng cho môi trường kiểm thử cục bộ; hãy thiết lập biến `NEWMEN_DEMO_ADMIN_PASSWORD` khi cần thay đổi.
 
-## Oracle profile
+---
 
-The project includes the Oracle `ojdbc11` driver and an example profile. Set a real Oracle service name, user, and password in the environment, apply the initial schema script, and start with the `oracle` profile:
+## 🗄 Kết nối Cơ sở dữ liệu Oracle Database
 
-```powershell
-$env:SPRING_PROFILES_ACTIVE = 'oracle'
-$env:ORACLE_JDBC_URL = 'jdbc:oracle:thin:@//localhost:1521/FREEPDB1'
-$env:ORACLE_DB_USER = 'NEWMEN'
-$env:ORACLE_DB_PASSWORD = '<your-local-password>'
-Set-Location backend
-.\mvnw.cmd spring-boot:run
-```
+Dự án đã tích hợp sẵn thư viện driver Oracle JDBC chính thức (`ojdbc11`) cùng tệp cấu hình mẫu `application-oracle.yml`.
 
-`db/oracle-schema.sql` is a starting schema for Oracle 12c or newer. The Oracle profile uses Hibernate `validate`; it does not create tables automatically. Review and version a migration strategy before using a shared or production database. The H2 profile uses Hibernate schema update for local trials.
+Để kết nối với cơ sở dữ liệu Oracle thực tế (Oracle Database 19c, 21c hoặc 23c):
 
-## Configuration
+1. **Khởi tạo cấu trúc bảng:**
+   Đăng nhập vào Oracle với quyền chủ sở hữu schema (schema owner) và chạy script khởi tạo:
+   ```text
+   backend/db/oracle-schema.sql
+   ```
+2. **Khai báo biến môi trường và khởi động:**
+   ```powershell
+   $env:SPRING_PROFILES_ACTIVE = 'oracle'
+   $env:ORACLE_JDBC_URL = 'jdbc:oracle:thin:@//localhost:1521/FREEPDB1'
+   $env:ORACLE_DB_USER = 'NEWMEN'
+   $env:ORACLE_DB_PASSWORD = 'mat-khau-oracle-cua-ban'
 
-| Variable | Purpose | Default |
-| --- | --- | --- |
-| `PORT` | HTTP port | `8188` |
-| `APP_CORS_ORIGINS` | Explicit comma-separated browser origins | `http://localhost:4220,http://127.0.0.1:4220` |
-| `NEWMEN_UPLOAD_DIR` | Local image directory | `./uploads` |
-| `NEWMEN_DEMO_ADMIN_EMAIL` | Seed administrator email (`dev` only) | `admin@newmen.local` |
-| `NEWMEN_DEMO_ADMIN_PASSWORD` | Seed administrator password (`dev` only) | `ChangeMe123!` |
-| `ORACLE_JDBC_URL` | Oracle JDBC URL (`oracle` profile) | `jdbc:oracle:thin:@//localhost:1521/FREEPDB1` |
-| `ORACLE_DB_USER` | Oracle schema user | `NEWMEN` |
-| `ORACLE_DB_PASSWORD` | Oracle password | empty; provide it locally |
-| `SESSION_COOKIE_SECURE` | Mark session cookie secure behind HTTPS | `false` |
-| `FREE_SHIPPING_THRESHOLD` | Minimum merchandise subtotal for free delivery | `899000` VND |
+   cd backend
+   .\mvnw.cmd spring-boot:run
+   ```
 
-Session cookies are HttpOnly and SameSite=Lax; state-changing requests require the Angular-compatible CSRF cookie/header. Refresh the token through `GET /api/v1/auth/csrf` after login or logout and before state-changing requests. The Angular development setup should use relative `/api/v1` requests through its proxy.
+Tệp `db/oracle-schema.sql` định nghĩa chuẩn hóa cho Oracle 12c trở lên. Ở profile `oracle`, Hibernate sử dụng chế độ `ddl-auto: validate` để kiểm tra tính toàn vẹn của các bảng sẵn có mà không tự ý sửa đổi dữ liệu thực tế.
 
-## Implemented areas
+---
 
-- Public catalog search, category and variant filtering, sorting, pagination, product detail, recommendations, and active voucher list.
-- Customer registration/login/logout, profile and address book, session cart, voucher application, guest or member checkout, order history/detail, review and return request.
-- Admin products, variants, categories, local image upload/delete, customers, staff, promotions, POS draft bills, order status history, returns, reports, CSV export, and printable PDF invoices.
-- Server-side validation, hashed passwords, role checks, CSRF, structured API errors, transactional checkout with locked stock rows and idempotency keys.
+## ⚙ Bảng biến môi trường cấu hình
 
-Payment (`BANK_TRANSFER_SAMPLE`) and shipping settings are placeholders. No real payment, carrier, mail/SMS, Firebase, or other third-party service is called. POS draft carts live in the authenticated HTTP session (up to five per session); completed orders are persisted in the database.
+| Biến môi trường | Mục đích | Giá trị mặc định |
+| :--- | :--- | :--- |
+| `PORT` | Cổng HTTP lắng nghe của dịch vụ Backend | `8188` |
+| `APP_CORS_ORIGINS` | Danh sách tên miền trình duyệt được phép truy cập (CORS) | `http://localhost:4220,http://127.0.0.1:4220` |
+| `NEWMEN_UPLOAD_DIR` | Thư mục lưu trữ file ảnh sản phẩm trên ổ đĩa | `./uploads` |
+| `NEWMEN_DEMO_ADMIN_EMAIL` | Email tài khoản quản trị mặc định (chỉ profile `dev`) | `admin@newmen.local` |
+| `NEWMEN_DEMO_ADMIN_PASSWORD` | Mật khẩu tài khoản quản trị mặc định (chỉ profile `dev`) | `ChangeMe123!` |
+| `ORACLE_JDBC_URL` | Chuỗi kết nối JDBC Oracle (profile `oracle`) | `jdbc:oracle:thin:@//localhost:1521/FREEPDB1` |
+| `ORACLE_DB_USER` | Tên người dùng / schema Oracle | `NEWMEN` |
+| `ORACLE_DB_PASSWORD` | Mật khẩu tài khoản Oracle | *(để trống, truyền qua biến môi trường)* |
+| `SESSION_COOKIE_SECURE` | Đánh dấu cờ bảo mật Secure cho Cookie khi dùng HTTPS | `false` |
+| `FREE_SHIPPING_THRESHOLD` | Giá trị đơn hàng tối thiểu để được miễn phí giao hàng (VNĐ) | `899000` |
 
-The source report has incomplete and contradictory details. This implementation uses product variants as the stock unit and stores immutable order-line price snapshots. Advanced return/refund processing, product import/export, barcode label printing, and the thesis's recommendation profile logic require follow-up specifications.
+Session cookie của hệ thống được bảo vệ với các cờ `HttpOnly` và `SameSite=Lax`. Các yêu cầu làm thay đổi trạng thái (POST, PUT, PATCH, DELETE) bắt buộc phải kèm theo mã token CSRF tương thích với Angular. Token được cập nhật tự động qua endpoint `GET /api/v1/auth/csrf`.
+
+---
+
+## 📦 Các phân hệ nghiệp vụ đã hoàn thiện
+
+- **Tra cứu và danh mục sản phẩm (Public Catalog):** Tìm kiếm thông minh theo từ khóa không dấu, bộ lọc danh mục, màu sắc, kích cỡ, chất liệu, phân trang linh hoạt, sắp xếp đa chiều và danh sách khuyến mãi / voucher đang hoạt động.
+- **Khách hàng & Tài khoản cá nhân:** Đăng ký thành viên, đăng nhập, đổi mật khẩu, quản lý hồ sơ và sổ địa chỉ giao hàng, lưu giỏ hàng theo phiên, đánh giá sản phẩm kèm ảnh và gửi yêu cầu đổi trả hàng.
+- **Thanh toán an toàn (Checkout & Idempotency):** Khóa bản ghi tồn kho biến thể khi đặt hàng (Pessimistic Locking) để loại trừ hiện tượng bán vượt số lượng tồn kho (overselling); sử dụng khóa định danh duy nhất `Idempotency-Key` ngăn chặn tình trạng người dùng bấm thanh toán nhiều lần gây trùng đơn.
+- **Bán hàng tại quầy (POS Counter Sales):** Quản lý đồng thời tối đa 5 giỏ hàng chờ trên cùng một phiên làm việc của nhân viên thu ngân; tra cứu khách hàng nhanh bằng số điện thoại; tìm kiếm sản phẩm và quét mã vạch barcode; tính toán chiết khấu tự động.
+- **Quản trị vận hành (Admin Console):** Quản lý sản phẩm và ma trận biến thể, tải ảnh trực tiếp lên đĩa cứng máy chủ, quản lý 9 danh mục thuộc tính sản phẩm, nhân viên và phân quyền, chiến dịch khuyến mãi, duyệt đơn hàng và theo dõi lịch sử trạng thái đơn.
+- **Báo cáo & Chứng từ:** Xuất danh sách sản phẩm ra tệp CSV (mở trực tiếp bằng Microsoft Excel) và tạo hóa đơn bán lẻ PDF chuyên nghiệp có thể in trực tiếp.

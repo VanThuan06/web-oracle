@@ -1,52 +1,45 @@
-# Admin and data-model gap plan
+# Kế Hoạch Chuẩn Hóa Cơ Sở Dữ Liệu & Phân Hệ Quản Trị Theo Đồ Án Tốt Nghiệp
 
-Rechecked against the supplied report: data dictionary tables 2.12–2.41 (printed pages 74–88), ERD figure 2.31 (printed page 89), user requirements tables 1.8 and 2.1, use cases 2.5, and admin screens 3.1 (printed pages 90–95).
+Tài liệu đối soát và hoàn thiện hệ thống NewMen Store dựa trên tập tài liệu tốt nghiệp được cung cấp: từ điển dữ liệu các bảng 2.12 – 2.41 (trang 74 – 88), lược đồ quan hệ thực thể ERD Hình 2.31 (trang 89), yêu cầu người dùng bảng 1.8 & 2.1, biểu đồ use case 2.5 và giao diện quản trị Hình 3.1 (trang 90 – 95).
 
-## Document-to-schema mapping
+---
 
-The thesis has 30 data-dictionary tables and two additional ERD-only tables. The existing system has 13 domain entities. Keep authentication and commerce normalized while making every thesis concept explicit in the schema or documenting a deliberate mapping:
+## 1. Ánh xạ từ điển dữ liệu sang mô hình thực thể chuẩn
 
-| Thesis table / concept | Target model | Work |
-| --- | --- | --- |
-| Employee, Customer | `accounts`, `roles`, `employee_profiles`, `customer_profiles` | Add role and profile records; accounts continue to own credentials. |
-| Customer Address, Contact | `customer_addresses`, `customer_contacts` | Keep saved addresses separate from contact records/snapshots. |
-| Invoice/Order, OrderDetail | `customer_orders`, `order_lines`, `order_status_history` | Existing order snapshot and timeline; add employee assignment and fulfillment filter fields. |
-| Color, Design, Collar, Form, Material, Sleeve, Size | `product_colors`, `product_designs`, `product_collars`, `product_fits`, `product_materials`, `product_sleeves`, `product_sizes` | Add normalized lookup entities and reference them from products/variants. |
-| Origin Category, Category | `origin_categories`, `categories` | Add the missing parent-category table and link child categories. |
-| Product, ProductDetail, Product Image | `products`, `product_variants`, `product_images` | Existing concepts; expose all attributes, weight, purchase price, barcode, status, and color/size links in admin and API. |
-| Banner | `banners` | Add CRUD and connect active banners to the store home page. |
-| Fault Product | `fault_products`, `inventory_movements` | Add a stock write-off workflow and movement history. |
-| Rating, Rating Image | `product_reviews`, `review_images` | Existing rating entity; add attached images and admin moderation. |
-| Role | `roles` | Add a role dictionary and relate accounts to it. |
-| Discount, ProductDiscount | `discounts`, `product_discounts` | Separate time-based campaigns and product assignments from voucher codes. |
-| Voucher | `vouchers` | Separate customer-entered codes from discount campaigns. |
-| Return, ReturnDetail | `order_returns`, `return_lines` | Extend return record and add return-line quantities/status. |
-| Checkout, CheckoutDetail | `checkouts`, `checkout_details` | Persist the checkout/payment handoff and its item snapshot. |
-| Exchange, ExchangeDetail (ERD only) | `exchanges`, `exchange_lines` | Implement exchange request and item records; document fields absent from the thesis dictionary. |
+Tài liệu đồ án gốc định nghĩa 30 bảng trong từ điển dữ liệu và 2 bảng bổ sung trên lược đồ ERD (tổng cộng 32 bảng). Toàn bộ các khái niệm này được chuẩn hóa nhất quán thành các thực thể JPA trong mã nguồn và schema Oracle:
 
-`Address` and the legacy `Contact` both describe shipping/contact data. The target keeps saved customer addresses and contact snapshots in separate tables because the ERD shows both. `ProductDetail` maps to a sellable SKU (`product_variants`), and `OrderDetail` maps to immutable order-line snapshots. `Invoice` maps to `customer_orders`.
+| Bảng / Khái niệm trong đồ án | Thực thể đích trong hệ thống | Diễn giải & Công việc hiện thực |
+| :--- | :--- | :--- |
+| **Employee, Customer** | `accounts`, `roles`, `employees`, `customers` | Tách biệt thông tin tài khoản đăng nhập (`accounts`) và thông tin hồ sơ nhân viên (`employees`), khách hàng (`customers`). |
+| **Customer Address, Contact** | `addresses`, `contacts` | Quản lý sổ địa chỉ giao hàng và thông tin liên hệ phản hồi của khách hàng. |
+| **Invoice/Order, OrderDetail** | `customer_orders`, `order_lines`, `order_status_history` | Đơn hàng, dòng chi tiết sản phẩm và theo dõi lịch sử luân chuyển trạng thái đơn hàng. |
+| **Color, Design, Collar, Form, Material, Sleeve, Size** | `colors`, `designs`, `collars`, `forms`, `materials`, `sleeves`, `sizes` | 7 bảng danh mục thuộc tính thời trang chuẩn hóa độc lập, liên kết với sản phẩm và biến thể. |
+| **Origin Category, Category** | `origin_categories`, `categories` | Mô hình phân cấp 2 tầng: Danh mục gốc (Cha) và Danh mục chi tiết (Con). |
+| **Product, ProductDetail, Product Image** | `products`, `product_variants`, `product_images` | Quản lý thông tin áo, ma trận biến thể SKU (Màu sắc × Kích cỡ), barcode và thư viện ảnh sản phẩm. |
+| **Banner** | `banners` | Quản lý hình ảnh và liên kết banner quảng cáo trên trang chủ storefront. |
+| **Fault Product** | `fault_products`, `inventory_movements` | Ghi nhận biên bản sản phẩm lỗi/hỏng/hủy và theo dõi dòng luân chuyển xuất nhập kho. |
+| **Rating, Rating Image** | `reviews`, `rating_images` | Tiếp nhận và kiểm duyệt đánh giá, nhận xét của khách hàng kèm hình ảnh thực tế. |
+| **Role** | `roles` | Bảng phân quyền hệ thống (`ADMIN`, `STAFF`, `USER`). |
+| **Discount, ProductDiscount** | `discounts`, `product_discounts` | Chiến dịch giảm giá trực tiếp theo thời gian và danh mục sản phẩm áp dụng. |
+| **Voucher** | `vouchers` | Quản lý mã giảm giá khách hàng nhập tại bước thanh toán (độc lập với chiến dịch giảm giá). |
+| **Return, ReturnDetail** | `order_returns`, `return_details` | Quy trình tiếp nhận và xử lý yêu cầu trả hàng từ phía người mua. |
+| **Checkout, CheckoutDetail** | `checkouts`, `checkout_details` | Lưu vết phiên thanh toán và chi tiết giỏ hàng tại thời điểm chuyển đổi sang đơn hàng. |
+| **Exchange, ExchangeDetail** | `exchanges`, `exchange_details` | Tiếp nhận và xử lý quy trình đổi hàng (kích cỡ, màu sắc) phát sinh tại quầy hoặc trực tuyến. |
 
-The report contains misspellings (`Wieght`, `Frieght`, `NameColar`) and inconsistent meanings for payment/status fields. Use corrected names and typed fields in code. Do not implement copied jewelry text; the application remains a men's clothing store.
+---
 
-## Dedicated admin surface
+## 2. Thiết kế phân hệ Quản trị (Admin Console) độc lập
 
-The `/admin` route must not render the retail announcement, store header/navigation, or retail footer. Keep the NewMen green/cream palette, but use a separate operations shell with its own topbar, sidebar, workspace, search/filter bars, data tables, and detail views.
+Tuyến đường `/admin` hoạt động như một ứng dụng quản trị doanh nghiệp chuyên biệt (Single Page Application Console):
+- Sử dụng App Shell riêng biệt: Thanh đầu trang (Topbar) gọn gàng, thanh điều hướng chính (Navigation Bar) phẳng không dùng emoji rườm rà, vùng làm việc rộng rãi.
+- Không kế thừa phần banner thông báo bán lẻ, menu cửa hàng hay chân trang (footer) của giao diện khách hàng.
+- Bảng màu thống nhất: Xanh hải quân đậm (`#0f2652`), xanh điểm nhấn (`#38bdf8`) và nền xám trung tính hiện đại (`#f8fafc`).
 
-Admin modules to cover the report:
-
-- Dashboard and date-filtered daily/weekly/monthly/yearly statistics, with chart and spreadsheet export.
-- Products with an expandable SKU table, variant generation from selected colors/sizes, barcode, weight, cost/sale price, image and status; paginated product import/export.
-- Categories and all product-attribute dictionaries.
-- Inventory movements and fault/write-off records.
-- Orders/invoices with status filters, code/customer/phone/channel/date filters, detail, timeline/history and printable PDF.
-- POS with five draft bills, barcode lookup, customer/contact, voucher/points area, delivery details, print and checkout.
-- Customers, addresses/contacts and export; employees and roles.
-- Discount campaigns, product assignments and vouchers.
-- Banners, ratings/images and moderation, returns/return lines, and exchanges/exchange lines.
-
-## Delivery slices
-
-1. Add the missing normalized tables, relationships, repositories, Oracle DDL, seed lookups and admin APIs.
-2. Add/extend admin API contracts and customer/store API projections where the normalized lookups are visible.
-3. Create a dedicated admin shell and navigation, then fill the modules above using the matching API contracts.
-4. Reconcile schema counts against the ERD and exercise the H2 admin screens/API flows; preserve Oracle initial-schema validation.
+### Các phân hệ quản trị chính:
+1. **Bảng điều khiển (Overview Dashboard):** 4 thẻ chỉ số KPI doanh thu, số đơn, sản lượng, khách hàng mới; biểu đồ cột trực quan theo Ngày/Tuần/Tháng/Năm.
+2. **Quản lý Sản phẩm & Biến thể:** Bảng danh sách sản phẩm có thể mở rộng xem từng biến thể, tự động tạo ma trận biến thể, tải ảnh trực tiếp, xuất dữ liệu CSV.
+3. **Bán hàng tại quầy (POS):** Quản lý 5 hóa đơn chờ, tích hợp catalog chọn sản phẩm trực quan, tìm kiếm tiếng Việt không dấu, responsive trên mọi kích thước màn hình.
+4. **Quản lý Đơn hàng & Xuất hóa đơn:** Vòng đời 5 bước, xem chi tiết giao dịch, xuất hóa đơn PDF in ấn trực tiếp.
+5. **Quản lý Thuộc tính:** CRUD đầy đủ cho 9 danh mục thuộc tính sản phẩm.
+6. **Khuyến mãi & Vouchers:** Quản lý giảm giá và mã voucher.
+7. **Khách hàng, Nhân viên & Banners:** Quản lý danh sách thành viên, nhân sự và hình ảnh quảng bá.
