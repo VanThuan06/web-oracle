@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, computed, inject, signal } from '@angular/core';
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize, switchMap } from 'rxjs';
@@ -82,7 +84,7 @@ function removeVietnameseAccents(str: string): string {
   templateUrl: './admin.component.html',
   styleUrl: './admin.component.css',
 })
-export class AdminComponent implements OnInit {
+export class AdminComponent implements OnInit, AfterViewInit {
   private readonly api = inject(StoreApiService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
@@ -97,6 +99,9 @@ export class AdminComponent implements OnInit {
   readonly globalSearch = signal('');
 
   // 1. Overview / Dashboard
+  @ViewChild('revenueChartCanvas') revenueChartCanvas?: ElementRef<HTMLCanvasElement>;
+  private revenueChartInstance: Chart | null = null;
+  readonly chartType = signal<'bar' | 'line'>('bar');
   readonly dashboardStats = signal<DashboardStats | null>(null);
   readonly dashboardRange = signal<'DAY' | 'WEEK' | 'MONTH' | 'YEAR'>('MONTH');
   readonly reportFrom = signal(this.daysAgo(30));
@@ -415,6 +420,12 @@ export class AdminComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit(): void {
+    if (this.tab() === 'overview') {
+      setTimeout(() => this.renderRevenueChart(), 100);
+    }
+  }
+
   ngOnInit(): void {
     this.api.me().pipe(finalize(() => this.loading.set(false))).subscribe({
       next: (user) => {
@@ -440,7 +451,7 @@ export class AdminComponent implements OnInit {
   }
 
   loadTab(tab = this.tab()): void {
-    if (tab === 'overview') this.loadOverview();
+    if (tab === 'overview') { this.loadOverview(); setTimeout(() => this.renderRevenueChart(), 80); }
     if (tab === 'pos') {
       this.loadPosCarts();
       this.loadPosProducts();
@@ -493,8 +504,11 @@ export class AdminComponent implements OnInit {
 
   // --- 1. OVERVIEW & REPORTS ---
   loadOverview(): void {
-    this.api.getDashboardStats(this.dashboardRange(), this.reportFrom(), this.reportTo()).subscribe({
-      next: (stats) => this.dashboardStats.set(stats),
+    this.api.getDashboardStats(this.dashboardRange()).subscribe({
+      next: (stats) => {
+        this.dashboardStats.set(stats);
+        setTimeout(() => this.renderRevenueChart(), 60);
+      },
       error: () => {
         // Fallback to legacy summary
         this.api.adminSummary(this.reportFrom(), this.reportTo()).subscribe({
@@ -503,6 +517,11 @@ export class AdminComponent implements OnInit {
         });
       },
     });
+  }
+
+  setChartType(type: 'bar' | 'line'): void {
+    this.chartType.set(type);
+    this.renderRevenueChart();
   }
 
   setDashboardRange(range: 'DAY' | 'WEEK' | 'MONTH' | 'YEAR'): void {
@@ -1588,35 +1607,158 @@ export class AdminComponent implements OnInit {
     URL.revokeObjectURL(url);
   }
 
-  // Bar height & SVG layout helpers for Revenue Chart
-  barHeight(val: number, max: number): number {
-    if (!val || val <= 0 || !max || max <= 0) return 0;
-    return Math.max(4, Math.round((val / max) * 125));
-  }
-
-  chartBarX(index: number, total: number): number {
-    if (!total || total <= 0) return 60;
-    const step = 700 / total;
-    const barW = this.chartBarWidth(total);
-    return 60 + index * step + (step - barW) / 2;
-  }
-
-  chartBarWidth(total: number): number {
-    if (!total || total <= 0) return 24;
-    const step = 700 / total;
-    return Math.max(8, Math.min(32, Math.floor(step * 0.65)));
-  }
-
-  shouldShowChartLabel(index: number, total: number, value: number): boolean {
-    if (total <= 8) return true;
-    if (value > 0) return true;
-    const step = Math.ceil(total / 6);
-    return index === 0 || index === total - 1 || index % step === 0;
-  }
-
   maxChartValue(): number {
     const points = this.dashboardStats()?.revenueChart ?? [];
-    if (!points.length) return 1000000;
-    return Math.max(...points.map((p) => p.value), 1000000);
+    if (!points.length) return 0;
+    return Math.max(...points.map((p) => p.value), 0);
+  }
+
+  avgChartValue(): number {
+    const points = this.dashboardStats()?.revenueChart ?? [];
+    if (!points.length) return 0;
+    const sum = points.reduce((acc, p) => acc + (p.value || 0), 0);
+    return Math.round(sum / points.length);
+  }
+
+  renderRevenueChart(): void {
+    const canvas = this.revenueChartCanvas?.nativeElement;
+    if (!canvas) return;
+
+    const dataPoints = this.dashboardStats()?.revenueChart ?? [];
+    const labels = dataPoints.map((p) => p.label);
+    const values = dataPoints.map((p) => p.value);
+    const counts = dataPoints.map((p) => p.count || 0);
+
+    if (this.revenueChartInstance) {
+      this.revenueChartInstance.destroy();
+      this.revenueChartInstance = null;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const isLine = this.chartType() === 'line';
+    let bgFill: any;
+
+    if (isLine) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+      gradient.addColorStop(0, 'rgba(24, 59, 122, 0.4)');
+      gradient.addColorStop(0.6, 'rgba(56, 189, 248, 0.12)');
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+      bgFill = gradient;
+    } else {
+      const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+      gradient.addColorStop(0, '#183B7A');
+      gradient.addColorStop(1, '#38BDF8');
+      bgFill = gradient;
+    }
+
+    this.revenueChartInstance = new Chart(ctx, {
+      type: isLine ? 'line' : 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Doanh thu',
+            data: values,
+            backgroundColor: bgFill,
+            borderColor: '#183B7A',
+            borderWidth: isLine ? 3 : 0,
+            borderRadius: isLine ? 0 : 6,
+            borderSkipped: false,
+            tension: 0.38,
+            fill: isLine,
+            pointBackgroundColor: '#183B7A',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: isLine ? (dataPoints.length > 20 ? 3 : 5) : 0,
+            pointHoverRadius: 7,
+            maxBarThickness: 40,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleColor: '#ffffff',
+            bodyColor: '#e2e8f0',
+            borderColor: 'rgba(255, 255, 255, 0.12)',
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8,
+            boxPadding: 4,
+            callbacks: {
+              title: (items) => {
+                const idx = items[0]?.dataIndex ?? 0;
+                return 'Kỳ: ' + labels[idx];
+              },
+              label: (context) => {
+                const val = (context.raw as number) || 0;
+                const formatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+                return '  Doanh thu: ' + formatted;
+              },
+              afterLabel: (context) => {
+                const idx = context.dataIndex;
+                const count = counts[idx] || 0;
+                return '  Số giao dịch: ' + count + ' đơn';
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false,
+            },
+            ticks: {
+              color: '#64748B',
+              font: {
+                size: 11,
+                weight: 500,
+              },
+              autoSkip: true,
+              maxTicksLimit: dataPoints.length > 20 ? 12 : dataPoints.length,
+              maxRotation: 0,
+            },
+            border: {
+              color: '#E2E8F0',
+            },
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: '#F1F5F9',
+            },
+            border: {
+              dash: [4, 4],
+              color: 'transparent',
+            },
+            ticks: {
+              color: '#94A3B8',
+              font: {
+                size: 11,
+              },
+              callback: (value) => {
+                const num = Number(value);
+                if (num === 0) return '0 ₫';
+                if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M ₫';
+                if (num >= 1000) return (num / 1000).toFixed(0) + 'k ₫';
+                return num + ' ₫';
+              },
+            },
+          },
+        },
+      },
+    });
   }
 }

@@ -509,7 +509,7 @@ public class SeedData implements CommandLineRunner {
         ProductVariant vJacketBlack = variants.findBySku("NM-JK-001-DE-L").orElse(null);
         ProductVariant vBlazerBlack = variants.findBySku("NM-BZ-001-DE-M").orElse(null);
 
-        if (orders.count() < 9 && vShirtRed != null && vShirtWhite != null && vPoloNavy != null) {
+        if (orders.count() < 16 && vShirtRed != null && vShirtWhite != null && vPoloNavy != null) {
             // Đơn 1: HD0000000010 - Trạng thái: PENDING (Chờ duyệt) - Online [Theo đồ án]
             seedOrder("HD0000000010", customerHieu, custAcc, "hieu", "0988377373", "hieu@newmen.local",
                 "123, Phường Bưởi, Quận Tây Hồ, Hà Nội", "123, Phường Bưởi", "Phường Bưởi", "Quận Tây Hồ", "Hà Nội",
@@ -605,6 +605,62 @@ public class SeedData implements CommandLineRunner {
                 List.of(new OrderLineItem(vShirtWhite, 1, new BigDecimal("620000"), "Sơ mi kẻ sọc")),
                 List.of(new StatusHistoryRecord(null, "PENDING", "Khách đặt đơn", "bao.hoang@gmail.com"),
                         new StatusHistoryRecord("PENDING", "CANCELLED", "Khách gọi hotline yêu cầu hủy đơn", "staff@newmen.local")));
+
+            // Đơn 10: HD-HIST-001 - COMPLETED - cách đây 25 ngày
+            seedOrder("HD-HIST-001", custNam, custNam.account, "Nguyễn Hải Nam", "0966445566", "nam.nguyen@company.vn",
+                "Số 250 Hoàng Hoa Thám, Hà Nội", "250 Hoàng Hoa Thám", "Thụy Khuê", "Tây Hồ", "Hà Nội",
+                "BANK_TRANSFER", "CHUYEN_KHOAN", "PAID", "ONLINE", "COMPLETED",
+                new BigDecimal("1450000"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("1450000"),
+                null, "Đơn hàng đầu kỳ", LocalDateTime.now().minusDays(25).withHour(14),
+                List.of(new OrderLineItem(vBlazerBlack != null ? vBlazerBlack : vShirtWhite, 1, new BigDecimal("1450000"), "Blazer")),
+                List.of(new StatusHistoryRecord(null, "COMPLETED", "Giao thành công", "staff@newmen.local")));
+
+            // Đơn 11: HD-HIST-002 - COMPLETED - cách đây 21 ngày
+            seedOrder("HD-HIST-002", custLong, custLong.account, "Trần Minh Long", "0977223344", "long.tran@gmail.com",
+                "Số 45 Lê Văn Lương, Hà Nội", "45 Lê Văn Lương", "Nhân Chính", "Thanh Xuân", "Hà Nội",
+                "COD", "COD", "PAID", "ONLINE", "COMPLETED",
+                new BigDecimal("950000"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("950000"),
+                null, "Áo khoác gió bomber", LocalDateTime.now().minusDays(21).withHour(10),
+                List.of(new OrderLineItem(vJacketBlack != null ? vJacketBlack : vShirtWhite, 1, new BigDecimal("950000"), "Bomber")),
+                List.of(new StatusHistoryRecord(null, "COMPLETED", "Giao thành công", "staff@newmen.local")));
+
+            // Đơn 12: HD-HIST-003 - COMPLETED - cách đây 17 ngày
+            seedOrder("HD-HIST-003", custDuc, custDuc.account, "Lê Văn Đức", "0933556677", "duc.le@outlook.com",
+                "Số 88 Kim Mã, Hà Nội", "88 Kim Mã", "Kim Mã", "Ba Đình", "Hà Nội",
+                "BANK_TRANSFER", "CHUYEN_KHOAN", "PAID", "ONLINE", "COMPLETED",
+                new BigDecimal("1240000"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("1240000"),
+                null, "Combo 2 áo sơ mi và polo", LocalDateTime.now().minusDays(17).withHour(16),
+                List.of(new OrderLineItem(vShirtWhite, 1, new BigDecimal("590000"), "Sơ mi Oxford"),
+                        new OrderLineItem(vPoloNavy, 1, new BigDecimal("650000"), "Polo")),
+                List.of(new StatusHistoryRecord(null, "COMPLETED", "Giao thành công", "staff@newmen.local")));
+
+            // Đơn 13: HD-HIST-004 - COMPLETED - cách đây 13 ngày
+            seedOrder("HD-HIST-004", custBao, custBao.account, "Hoàng Quốc Bảo", "0911889900", "bao.hoang@gmail.com",
+                "Số 12 Nguyễn Trãi, Hà Nội", "12 Nguyễn Trãi", "Thượng Đình", "Thanh Xuân", "Hà Nội",
+                "TRANSFER", "CHUYEN_KHOAN_QR", "PAID", "POS", "COMPLETED",
+                new BigDecimal("1860000"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("1860000"),
+                null, "Mua trực tiếp tại showroom", LocalDateTime.now().minusDays(13).withHour(11),
+                List.of(new OrderLineItem(vShirtWhite, 2, new BigDecimal("590000"), "Sơ mi"),
+                        new OrderLineItem(vPoloNavy, 1, new BigDecimal("680000"), "Polo")),
+                List.of(new StatusHistoryRecord(null, "COMPLETED", "Thanh toán POS thành công", "staff@newmen.local")));
+
+            // Đơn 14: HD-HIST-005 - COMPLETED - cách đây 9 ngày
+            seedOrder("HD-HIST-005", custTuan, custTuan.account, "Vũ Minh Tuấn", "0903123789", "tuan.vu@saigon.vn",
+                "Số 15 Nguyễn Thị Minh Khai, TP.HCM", "15 Nguyễn Thị Minh Khai", "Bến Nghé", "Quận 1", "TP. Hồ Chí Minh",
+                "BANK_TRANSFER", "CHUYEN_KHOAN", "PAID", "ONLINE", "COMPLETED",
+                new BigDecimal("1450000"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("1450000"),
+                null, "Giao ViettelPost liên tỉnh", LocalDateTime.now().minusDays(9).withHour(15),
+                List.of(new OrderLineItem(vBlazerBlack != null ? vBlazerBlack : vShirtWhite, 1, new BigDecimal("1450000"), "Blazer")),
+                List.of(new StatusHistoryRecord(null, "COMPLETED", "Đã nhận hàng", "staff@newmen.local")));
+
+            // Đơn 15: HD-HIST-006 - COMPLETED - cách đây 6 ngày
+            seedOrder("HD-HIST-006", customerHieu, custAcc, "Nguyễn Thành Hiếu", "0988377373", "hieu@newmen.local",
+                "Nhận tại quầy NewMen", "12 Lê Thái Tổ", "Hàng Trống", "Hoàn Kiếm", "Hà Nội",
+                "CASH", "TIEN_MAT", "PAID", "POS", "COMPLETED",
+                new BigDecimal("840000"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("840000"),
+                null, "Khách mua tại quầy", LocalDateTime.now().minusDays(6).withHour(19),
+                List.of(new OrderLineItem(vPoloNavy, 2, new BigDecimal("420000"), "Polo Signature")),
+                List.of(new StatusHistoryRecord(null, "COMPLETED", "Thanh toán POS", "staff@newmen.local")));
 
             // ==============================================================
             // 7. ĐỔI HÀNG & TRẢ HÀNG (4 BẢNG: Return, ReturnDetail, Exchange, ExchangeDetail)

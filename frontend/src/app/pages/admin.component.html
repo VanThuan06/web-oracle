@@ -199,59 +199,45 @@
         </div>
       </div>
 
-      <!-- REVENUE TREND SVG COLUMN CHART -->
+      <!-- REVENUE TREND INTERACTIVE CHART.JS -->
       <div class="card chart-card">
-        <div class="card-header">
+        <div class="card-header chart-card-header">
           <div>
             <h3>Xu hướng doanh thu theo kỳ</h3>
-            <p class="card-subtitle">Biểu đồ thể hiện biến động doanh thu theo từng mốc thời gian</p>
+            <p class="card-subtitle">Biểu đồ thể hiện biến động doanh thu và lượng giao dịch</p>
           </div>
-          <span class="card-badge">Cột trực quan</span>
-        </div>
-        <div class="chart-container">
-          @if (dashboardStats()?.revenueChart?.length) {
-            @let points = dashboardStats()!.revenueChart!;
-            @let totalPts = points.length;
-            @let maxVal = maxChartValue();
-            @let barW = chartBarWidth(totalPts);
-            <div class="svg-chart-wrap">
-              <svg viewBox="0 0 800 220" class="revenue-chart-svg" preserveAspectRatio="xMidYMid meet">
-                <!-- Y-Axis Scale Guides & Labels -->
-                <line x1="55" y1="30" x2="780" y2="30" stroke="#E2E8F0" stroke-dasharray="4" />
-                <text x="46" y="34" text-anchor="end" font-size="10" fill="#94A3B8" font-weight="500">{{ (maxVal / 1000000).toFixed(1) }}M</text>
-
-                <line x1="55" y1="95" x2="780" y2="95" stroke="#E2E8F0" stroke-dasharray="4" />
-                <text x="46" y="99" text-anchor="end" font-size="10" fill="#94A3B8" font-weight="500">{{ (maxVal / 2000000).toFixed(1) }}M</text>
-
-                <line x1="55" y1="160" x2="780" y2="160" stroke="#CBD5E1" stroke-width="1.5" />
-                <text x="46" y="164" text-anchor="end" font-size="10" fill="#94A3B8" font-weight="500">0</text>
-
-                <!-- Columns -->
-                @for (pt of points; track pt.label; let i = $index) {
-                  @let x = chartBarX(i, totalPts);
-                  @let h = barHeight(pt.value, maxVal);
-                  <g class="chart-bar-group">
-                    <title>{{ pt.label }}: {{ pt.value | currency:'VND':'symbol':'1.0-0':'vi' }} ({{ pt.count || 0 }} đơn)</title>
-                    @if (h > 0) {
-                      <rect [attr.x]="x" [attr.y]="160 - h" [attr.width]="barW" [attr.height]="h" rx="4" class="chart-bar active-bar" fill="#183B7A" />
-                      <text [attr.x]="x + barW / 2" [attr.y]="150 - h" text-anchor="middle" font-size="10" font-weight="700" fill="#183B7A">
-                        {{ (pt.value / 1000000).toFixed(1) }}M
-                      </text>
-                    } @else {
-                      <rect [attr.x]="x" y="157" [attr.width]="barW" height="3" rx="1.5" fill="#E2E8F0" class="chart-bar zero-bar" />
-                    }
-                    @if (shouldShowChartLabel(i, totalPts, pt.value)) {
-                      <text [attr.x]="x + barW / 2" y="180" text-anchor="middle" font-size="10" font-weight="500" fill="#64748B">
-                        {{ pt.label }}
-                      </text>
-                    }
-                  </g>
-                }
-              </svg>
+          <div class="chart-header-extra">
+            <div class="chart-metric-pill">
+              <span>Đỉnh doanh thu:</span>
+              <strong>{{ maxChartValue() | currency:'VND':'symbol':'1.0-0':'vi' }}</strong>
             </div>
-          } @else {
-            <p class="empty-state">Đang cập nhật biểu đồ doanh thu theo thời gian thực...</p>
-          }
+            <div class="chart-metric-pill">
+              <span>Trung bình:</span>
+              <strong>{{ avgChartValue() | currency:'VND':'symbol':'1.0-0':'vi' }}</strong>/kỳ
+            </div>
+            <div class="chart-type-toggles">
+              <button
+                type="button"
+                [class.active]="chartType() === 'bar'"
+                (click)="setChartType('bar')"
+                title="Xem biểu đồ cột"
+              >
+                Cột
+              </button>
+              <button
+                type="button"
+                [class.active]="chartType() === 'line'"
+                (click)="setChartType('line')"
+                title="Xem biểu đồ đường mượt"
+              >
+                Đường mượt
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-canvas-wrapper">
+          <canvas #revenueChartCanvas></canvas>
         </div>
       </div>
 

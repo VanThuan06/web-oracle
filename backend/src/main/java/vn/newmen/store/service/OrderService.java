@@ -368,17 +368,37 @@ public class OrderService {
         List<ChartDataPoint> chartPoints = new ArrayList<>();
         List<CustomerOrder> orderRows = orders.findByCreatedAtBetweenAndStatusNot(startAt, endAt, "CANCELLED");
 
-        if ("year".equalsIgnoreCase(range)) {
+        if ("day".equalsIgnoreCase(range)) {
+            Map<String, java.math.BigDecimal> hourMap = new LinkedHashMap<>();
+            Map<String, Long> countMap = new LinkedHashMap<>();
+            for (int h = 8; h <= 22; h += 2) {
+                String label = String.format("%02d:00", h);
+                hourMap.put(label, java.math.BigDecimal.ZERO);
+                countMap.put(label, 0L);
+            }
+            for (CustomerOrder o : orderRows) {
+                int hour = o.createdAt.getHour();
+                int bucket = Math.max(8, Math.min(22, (hour / 2) * 2));
+                String label = String.format("%02d:00", bucket);
+                if (hourMap.containsKey(label)) {
+                    hourMap.put(label, hourMap.get(label).add(o.total != null ? o.total : java.math.BigDecimal.ZERO));
+                    countMap.put(label, countMap.get(label) + 1);
+                }
+            }
+            for (String k : hourMap.keySet()) {
+                chartPoints.add(new ChartDataPoint(k, hourMap.get(k), countMap.get(k)));
+            }
+        } else if ("year".equalsIgnoreCase(range)) {
             Map<String, java.math.BigDecimal> monthMap = new LinkedHashMap<>();
             Map<String, Long> countMap = new LinkedHashMap<>();
             for (int i = 11; i >= 0; i--) {
                 java.time.YearMonth ym = java.time.YearMonth.from(finish.minusMonths(i));
-                String label = "Th" + ym.getMonthValue();
+                String label = "Tháng " + ym.getMonthValue();
                 monthMap.put(label, java.math.BigDecimal.ZERO);
                 countMap.put(label, 0L);
             }
             for (CustomerOrder o : orderRows) {
-                String label = "Th" + o.createdAt.getMonthValue();
+                String label = "Tháng " + o.createdAt.getMonthValue();
                 if (monthMap.containsKey(label)) {
                     monthMap.put(label, monthMap.get(label).add(o.total != null ? o.total : java.math.BigDecimal.ZERO));
                     countMap.put(label, countMap.get(label) + 1);
