@@ -37,16 +37,16 @@
         <span class="ai-sparkle">✨</span> Gợi ý AI
       </button>
       <button type="button" class="nav-interactive-btn" (click)="openSizeGuide()">
-        <span>📏</span> Chọn size
+        Chọn size
       </button>
       <button type="button" class="nav-interactive-btn" (click)="openContact()">
-        <span>💬</span> Liên hệ
+        Liên hệ
       </button>
     </nav>
 
     <div class="header-actions">
       <a class="icon-link account-link" routerLink="/account" aria-label="Tài khoản cá nhân" (click)="closeMenu()">
-        <span class="user-avatar-icon">👤</span>
+        <span class="user-avatar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
         <span class="account-name">{{ user()?.fullName || 'Tài khoản' }}</span>
       </a>
 
@@ -57,7 +57,7 @@
       }
 
       <a class="bag-link" routerLink="/cart" aria-label="Giỏ hàng" (click)="closeMenu()">
-        <span class="bag-icon">🛍️</span>
+        <span class="bag-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span>
         <span class="bag-label">Giỏ hàng</span>
         <span class="bag-count">{{ cartCount() }}</span>
       </a>

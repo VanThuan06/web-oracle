@@ -7,7 +7,7 @@
         <span class="brand-badge">ADMIN CONSOLE</span>
       </a>
       <div class="topbar-search">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><svg class="search-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         <input type="text" placeholder="Tìm nhanh đơn hàng, sản phẩm, khách hàng..." [ngModel]="globalSearch()" (ngModelChange)="globalSearch.set($event)">
       </div>
     </div>
@@ -15,14 +15,14 @@
       @if (pendingOrderCount() > 0) {
         <button type="button" class="order-alert-pill" (click)="selectTab('orders'); setOrderFilterStatus('PENDING')">
           <span class="pulse-dot"></span>
-          <span>🔔 {{ pendingOrderCount() }} đơn chờ duyệt</span>
+          <span>{{ pendingOrderCount() }} đơn chờ duyệt</span>
         </button>
       }
       <button type="button" class="btn btn-outline btn-sm" (click)="triggerReseed()" title="Nạp đầy đủ 32 bảng và toàn bộ luồng quy trình">
-        ⚡ Nạp dữ liệu mẫu
+        Nạp dữ liệu mẫu
       </button>
       <a routerLink="/" class="storefront-link" target="_blank" title="Xem cửa hàng bán lẻ">
-        🏪 Cửa hàng ↗
+        Cửa hàng ↗
       </a>
       @if (user()) {
         <div class="user-profile">
@@ -37,7 +37,7 @@
         </button>
       } @else {
         <button type="button" class="btn btn-primary btn-sm" (click)="quickLogin('admin@newmen.local', 'ChangeMe123!')" title="Đăng nhập tài khoản Quản trị">
-          🔐 Đăng nhập Admin
+          Đăng nhập Admin
         </button>
       }
     </div>
@@ -61,10 +61,10 @@
 
         <div class="quick-login-pills">
           <button type="button" class="btn btn-primary btn-block" (click)="quickLogin('admin@newmen.local', 'ChangeMe123!')">
-            ⚡ Đăng nhập 1-chạm Quản trị viên (admin@newmen.local)
+            Đăng nhập Quản trị viên (admin@newmen.local)
           </button>
           <button type="button" class="btn btn-outline btn-block" (click)="quickLogin('staff@newmen.local', 'ChangeMe123!')">
-            👔 Đăng nhập Nhân viên POS (staff@newmen.local)
+            Đăng nhập Nhân viên POS (staff@newmen.local)
           </button>
         </div>
 
@@ -80,7 +80,7 @@
             <input type="password" formControlName="password" class="form-control" placeholder="••••••••">
           </div>
           <button type="submit" class="btn btn-dark btn-block btn-lg" [disabled]="loginSubmitting()">
-            @if (loginSubmitting()) { <span>Đang xác thực...</span> } @else { <span>🔐 Đăng nhập vào Quản trị</span> }
+            @if (loginSubmitting()) { <span>Đang xác thực...</span> } @else { <span>Đăng nhập vào Quản trị</span> }
           </button>
         </form>
       </div>
@@ -91,39 +91,39 @@
   <nav class="admin-navbar" aria-label="Điều hướng chính">
     <div class="nav-container">
       <button type="button" [class.active]="tab() === 'overview'" (click)="selectTab('overview')">
-        <span class="nav-icon">📊</span> Bảng điều khiển
+        Bảng điều khiển
       </button>
       <button type="button" [class.active]="tab() === 'pos'" (click)="selectTab('pos')">
-        <span class="nav-icon">🛒</span> Bán hàng tại quầy (POS)
+        Bán hàng tại quầy (POS)
       </button>
       <button type="button" [class.active]="tab() === 'orders'" (click)="selectTab('orders')">
-        <span class="nav-icon">📦</span> Quản lý Đơn hàng
+        Quản lý Đơn hàng
       </button>
       <button type="button" [class.active]="tab() === 'products'" (click)="selectTab('products')">
-        <span class="nav-icon">👔</span> Sản phẩm & Biến thể
+        Sản phẩm & Biến thể
       </button>
       <button type="button" [class.active]="tab() === 'attributes'" (click)="selectTab('attributes')">
-        <span class="nav-icon">🏷️</span> Thuộc tính (9 mục)
+        Thuộc tính (9 mục)
       </button>
       <button type="button" [class.active]="tab() === 'fault-products'" (click)="selectTab('fault-products')">
-        <span class="nav-icon">⚠️</span> Sản phẩm lỗi/hủy
+        Sản phẩm lỗi/hủy
       </button>
       <button type="button" [class.active]="tab() === 'promotions'" (click)="selectTab('promotions')">
-        <span class="nav-icon">🎁</span> Khuyến mãi & Voucher
+        Khuyến mãi & Voucher
       </button>
       <button type="button" [class.active]="tab() === 'customers'" (click)="selectTab('customers')">
-        <span class="nav-icon">👥</span> Khách hàng
+        Khách hàng
       </button>
       @if (user()?.role === 'ADMIN') {
         <button type="button" [class.active]="tab() === 'staff'" (click)="selectTab('staff')">
-          <span class="nav-icon">👔</span> Nhân viên & Role
+          Nhân viên & Role
         </button>
       }
       <button type="button" [class.active]="tab() === 'banners'" (click)="selectTab('banners')">
-        <span class="nav-icon">🖼️</span> Banners
+        Banners
       </button>
       <button type="button" [class.active]="tab() === 'feedback'" (click)="selectTab('feedback')">
-        <span class="nav-icon">💬</span> Đánh giá & Liên hệ
+        Đánh giá & Liên hệ
       </button>
     </div>
   </nav>
@@ -174,7 +174,7 @@
           </div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon orders">📦</div>
+          <div class="kpi-icon orders"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
           <div class="kpi-content">
             <span class="kpi-label">SỐ HÓA ĐƠN</span>
             <strong class="kpi-value">{{ dashboardStats()?.totalOrders ?? summary()?.orderCount ?? 0 }} đơn</strong>
@@ -182,7 +182,7 @@
           </div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon products">👔</div>
+          <div class="kpi-icon products"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
           <div class="kpi-content">
             <span class="kpi-label">SẢN PHẨM ĐÃ BÁN</span>
             <strong class="kpi-value">{{ dashboardStats()?.totalProductsSold ?? summary()?.unitsSold ?? 0 }} chiếc</strong>
@@ -190,7 +190,7 @@
           </div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-icon customers">👥</div>
+          <div class="kpi-icon customers"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <div class="kpi-content">
             <span class="kpi-label">KHÁCH HÀNG MỚI</span>
             <strong class="kpi-value">{{ dashboardStats()?.totalCustomers ?? summary()?.customerCount ?? 0 }} khách</strong>
@@ -352,7 +352,7 @@
             <!-- SEARCH & BARCODE INPUT -->
             <div class="pos-search-bar">
               <div class="pos-input-wrapper">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon"><svg class="search-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
                 <input
                   type="text"
                   class="pos-search-input"
@@ -373,7 +373,7 @@
                   (click)="posViewMode.set('grid')"
                   title="Dạng thẻ ảnh"
                 >
-                  ⊞ Lưới ảnh
+                  Lưới ảnh
                 </button>
                 <button
                   type="button"
@@ -382,7 +382,7 @@
                   (click)="posViewMode.set('table')"
                   title="Dạng bảng gọn"
                 >
-                  ☰ Bảng
+                  Bảng
                 </button>
               </div>
             </div>
@@ -521,7 +521,7 @@
                 }
               } @else {
                 <div class="pos-empty-state">
-                  <div class="empty-icon">🏷️</div>
+                  <div class="empty-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
                   <h4>Không tìm thấy sản phẩm nào phù hợp</h4>
                   <p>Thử đổi từ khóa tìm kiếm hoặc chọn danh mục "Tất cả" để xem danh sách toàn bộ sản phẩm tại quầy.</p>
                   <button type="button" class="btn btn-outline btn-sm" (click)="posQuery.set(''); posSelectedCategory.set('ALL')">
@@ -636,9 +636,9 @@
 
               <!-- PAYMENT METHOD TABS -->
               <div class="payment-methods">
-                <button type="button" [class.active]="posPaymentMethod() === 'CASH'" (click)="posPaymentMethod.set('CASH')">💵 Tiền mặt</button>
-                <button type="button" [class.active]="posPaymentMethod() === 'TRANSFER'" (click)="posPaymentMethod.set('TRANSFER')">📱 Chuyển khoản</button>
-                <button type="button" [class.active]="posPaymentMethod() === 'CARD'" (click)="posPaymentMethod.set('CARD')">💳 Quẹt thẻ</button>
+                <button type="button" [class.active]="posPaymentMethod() === 'CASH'" (click)="posPaymentMethod.set('CASH')">Tiền mặt</button>
+                <button type="button" [class.active]="posPaymentMethod() === 'TRANSFER'" (click)="posPaymentMethod.set('TRANSFER')">Chuyển khoản</button>
+                <button type="button" [class.active]="posPaymentMethod() === 'CARD'" (click)="posPaymentMethod.set('CARD')">Quẹt thẻ</button>
               </div>
 
               <!-- TOTALS BREAKDOWN -->
@@ -887,7 +887,7 @@
                 </td>
                 <td>
                   <label class="btn-file-upload">
-                    <span>📷 Chọn ảnh</span>
+                    <span>Chọn ảnh</span>
                     <input type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadImage(p, $event)">
                   </label>
                 </td>
