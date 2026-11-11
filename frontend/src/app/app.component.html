@@ -1,0 +1,587 @@
+@if (isAdminRoute()) {
+  <router-outlet />
+} @else {
+  <!-- Top Announcement Bar -->
+  <div class="announcement">
+    <div class="announcement-content">
+      <span class="announcement-tag">NEW SEASON 2026</span>
+      <span>Miễn phí giao hàng cho đơn từ 899.000₫ · Hỗ trợ đổi size tận nhà trong 7 ngày</span>
+      <span class="announcement-hotline">Hotline: <b>1900 2026</b> (08:30 - 21:30)</span>
+    </div>
+  </div>
+
+  <!-- Main Storefront Header -->
+  <header class="site-header">
+    <a class="brand" routerLink="/" aria-label="NewMen Store - Trang chủ" (click)="closeMenu()">
+      <span class="brand-mark">N<span>M</span></span>
+      <span class="brand-word">NEWMEN<small>STORE · HÀ NỘI</small></span>
+    </a>
+
+    <button class="menu-toggle" type="button" aria-label="Mở menu điều hướng" [attr.aria-expanded]="mobileOpen()" (click)="mobileOpen.set(!mobileOpen())">
+      <span class="menu-bar"></span>
+      <span class="menu-bar"></span>
+      <span class="menu-bar"></span>
+    </button>
+
+    <nav class="main-nav" [class.is-open]="mobileOpen()" aria-label="Điều hướng chính">
+      <a routerLink="/catalog" [queryParams]="{sort:'newest'}" routerLinkActive="active" (click)="closeMenu()">
+        Sản phẩm mới <span class="nav-badge">New</span>
+      </a>
+      <a routerLink="/catalog" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" (click)="closeMenu()">
+        Sản phẩm
+      </a>
+      <a routerLink="/catalog" [queryParams]="{sort:'bestseller'}" routerLinkActive="active" (click)="closeMenu()">
+        Bộ sưu tập
+      </a>
+      <button type="button" class="nav-interactive-btn ai-btn" (click)="openAiModal()">
+        <span class="ai-sparkle">✨</span> Gợi ý AI
+      </button>
+      <button type="button" class="nav-interactive-btn" (click)="openSizeGuide()">
+        <span>📏</span> Chọn size
+      </button>
+      <button type="button" class="nav-interactive-btn" (click)="openContact()">
+        <span>💬</span> Liên hệ
+      </button>
+    </nav>
+
+    <div class="header-actions">
+      <a class="icon-link account-link" routerLink="/account" aria-label="Tài khoản cá nhân" (click)="closeMenu()">
+        <span class="user-avatar-icon">👤</span>
+        <span class="account-name">{{ user()?.fullName || 'Tài khoản' }}</span>
+      </a>
+
+      @if (user()?.role === 'ADMIN' || user()?.role === 'STAFF') {
+        <a class="operator-link" routerLink="/admin" title="Vào trang quản trị NewMen Console">
+          Quản trị ↗
+        </a>
+      }
+
+      <a class="bag-link" routerLink="/cart" aria-label="Giỏ hàng" (click)="closeMenu()">
+        <span class="bag-icon">🛍️</span>
+        <span class="bag-label">Giỏ hàng</span>
+        <span class="bag-count">{{ cartCount() }}</span>
+      </a>
+
+      @if (user()) {
+        <button type="button" class="text-button logout-btn" (click)="signOut()" title="Đăng xuất tài khoản">
+          Thoát
+        </button>
+      }
+    </div>
+  </header>
+
+  <main>
+    <router-outlet />
+  </main>
+
+  <!-- Storefront Footer -->
+  <footer class="site-footer">
+    <div class="footer-main">
+      <div class="footer-col brand-col">
+        <a class="brand footer-brand" routerLink="/">
+          <span class="brand-mark">N<span>M</span></span>
+          <span class="brand-word">NEWMEN<small>STORE · HÀ NỘI</small></span>
+        </a>
+        <p class="brand-slogan">Thời trang nam tinh giản, chú trọng phom dáng vừa vặn và chất liệu thoải mái cho nhịp sống hiện đại.</p>
+        <div class="footer-badges">
+          <span class="trust-badge">✓ 100% Cotton & Linen tự nhiên</span>
+          <span class="trust-badge">✓ Đổi trả 7 ngày linh hoạt</span>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h2>Trợ giúp & Hướng dẫn</h2>
+        <a (click)="openSizeGuide()" class="footer-interactive-link">Bảng tính & Chọn size chuẩn</a>
+        <a (click)="openAiRecommend()" class="footer-interactive-link">Trợ lý gợi ý trang phục AI</a>
+        <a routerLink="/account">Tra cứu đơn hàng của tôi</a>
+        <a routerLink="/account">Chính sách đổi trả & bảo hành</a>
+      </div>
+
+      <div class="footer-col">
+        <h2>Hệ thống cửa hàng</h2>
+        <div class="store-item">
+          <strong>Showroom Hoàn Kiếm:</strong>
+          <span>12 Lê Thái Tổ, P. Hàng Trống, Hoàn Kiếm, Hà Nội</span>
+        </div>
+        <div class="store-item">
+          <strong>Showroom Ba Đình:</strong>
+          <span>88 Kim Mã, P. Kim Mã, Ba Đình, Hà Nội</span>
+        </div>
+        <div class="store-item">
+          <strong>Showroom Quận 1:</strong>
+          <span>15 Nguyễn Thị Minh Khai, Q.1, TP. Hồ Chí Minh</span>
+        </div>
+        <span class="working-hours">Mở cửa: 08:30 — 21:30 (Thứ 2 đến Chủ nhật)</span>
+      </div>
+
+      <div class="footer-col">
+        <h2>Bản tin NewMen</h2>
+        <p>Đăng ký nhận thông tin bộ sưu tập giới hạn và mã giảm giá 10% cho đơn hàng đầu tiên.</p>
+        <form class="newsletter" (submit)="$event.preventDefault()">
+          <label class="sr-only" for="newsletter-email">Email của bạn</label>
+          <input id="newsletter-email" type="email" placeholder="Nhập địa chỉ email của bạn...">
+          <button type="submit" aria-label="Đăng ký nhận tin">→</button>
+        </form>
+        <div class="contact-quick-cta">
+          <span>Cần hỗ trợ ngay? </span>
+          <button type="button" class="contact-trigger-btn" (click)="openContact()">Gửi yêu cầu liên hệ ↗</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 NewMen Store. Giữ bản quyền thương hiệu thời trang nam chỉn chu.</span>
+      <span>Tự hào phát triển & thiết kế tại Hà Nội, Việt Nam <span class="footer-star">★</span></span>
+    </div>
+  </footer>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 1: GỢI Ý TRANG PHỤC AI (AI Outfit & Styling Assistant)   -->
+  <!-- ============================================================== -->
+  @if (showAiModal()) {
+    <div class="modal-backdrop" (click)="closeAiModal()">
+      <div class="modal-dialog ai-modal-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="ai-modal-title">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-pill">AI STYLIST 2026</span>
+            <h2 id="ai-modal-title">Trợ lý AI Gợi ý Trang phục Nam</h2>
+            <p>Phân tích tuổi tác, bản mệnh ngũ hành phong thủy & tỉ lệ cơ thể để chọn chiếc áo hợp với bạn nhất.</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeAiModal()" aria-label="Đóng">✕</button>
+        </div>
+
+        <div class="modal-body ai-modal-body">
+          <div class="ai-input-grid">
+            <!-- Nhóm Tuổi -->
+            <div class="ai-field">
+              <label>Độ tuổi</label>
+              <div class="chip-group">
+                <button type="button" [class.active]="aiAge() === '18-24'" (click)="aiAge.set('18-24')">18 - 24 tuổi</button>
+                <button type="button" [class.active]="aiAge() === '25-35'" (click)="aiAge.set('25-35')">25 - 35 tuổi</button>
+                <button type="button" [class.active]="aiAge() === '36-50'" (click)="aiAge.set('36-50')">36 - 50 tuổi</button>
+                <button type="button" [class.active]="aiAge() === '50+'" (click)="aiAge.set('50+')">Trên 50</button>
+              </div>
+            </div>
+
+            <!-- Bản mệnh phong thủy -->
+            <div class="ai-field">
+              <label>Bản mệnh ngũ hành (Phong thủy may mắn)</label>
+              <div class="chip-group element-chips">
+                <button type="button" [class.active]="aiElement() === 'Kim'" (click)="aiElement.set('Kim')">⚪ Mệnh Kim (Trắng, Vàng, Ghi)</button>
+                <button type="button" [class.active]="aiElement() === 'Moc'" (click)="aiElement.set('Moc')">🟢 Mệnh Mộc (Xanh rêu, Xanh navy, Đen)</button>
+                <button type="button" [class.active]="aiElement() === 'Thuy'" (click)="aiElement.set('Thuy')">🔵 Mệnh Thủy (Đen, Xanh dương, Trắng)</button>
+                <button type="button" [class.active]="aiElement() === 'Hoa'" (click)="aiElement.set('Hoa')">🔴 Mệnh Hỏa (Đỏ đô, Cam đất, Be)</button>
+                <button type="button" [class.active]="aiElement() === 'Tho'" (click)="aiElement.set('Tho')">🟤 Mệnh Thổ (Vàng cát, Nâu, Be sáng)</button>
+              </div>
+            </div>
+
+            <!-- Dịp sử dụng -->
+            <div class="ai-field">
+              <label>Hoàn cảnh / Mục đích mặc</label>
+              <div class="chip-group">
+                <button type="button" [class.active]="aiOccasion() === 'office'" (click)="aiOccasion.set('office')">💼 Công sở & Đi làm</button>
+                <button type="button" [class.active]="aiOccasion() === 'casual'" (click)="aiOccasion.set('casual')">☕ Dạo phố & Cà phê</button>
+                <button type="button" [class.active]="aiOccasion() === 'dating'" (click)="aiOccasion.set('dating')">🍷 Tiệc tối & Hẹn hò</button>
+                <button type="button" [class.active]="aiOccasion() === 'active'" (click)="aiOccasion.set('active')">✈️ Du lịch & Thể thao</button>
+              </div>
+            </div>
+
+            <!-- Chiều cao & Cân nặng -->
+            <div class="ai-field body-measurements">
+              <div>
+                <label>Chiều cao: <b>{{ aiHeight() }} cm</b></label>
+                <input type="range" min="150" max="195" [ngModel]="aiHeight()" (ngModelChange)="aiHeight.set($event)">
+              </div>
+              <div>
+                <label>Cân nặng: <b>{{ aiWeight() }} kg</b></label>
+                <input type="range" min="45" max="110" [ngModel]="aiWeight()" (ngModelChange)="aiWeight.set($event)">
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-action-bar">
+            <button type="button" class="btn-primary run-ai-btn" [disabled]="aiLoading()" (click)="runAiRecommendation()">
+              {{ aiLoading() ? 'Đang phân tích phong cách...' : '✨ Phân tích & Gợi ý trang phục ngay' }}
+            </button>
+          </div>
+
+          <!-- Kết quả AI tư vấn -->
+          @if (aiAdvice()) {
+            <div class="ai-analysis-box">
+              <div class="ai-badge">KẾT QUẢ PHÂN TÍCH TỪ AI STYLIST</div>
+              <p>{{ aiAdvice() }}</p>
+              <div class="ai-size-tag">Gợi ý size tối ưu: <strong>Size {{ calculatedSize().size }}</strong> ({{ calculatedSize().fit }})</div>
+            </div>
+          }
+
+          <!-- Danh sách sản phẩm được đề xuất -->
+          @if (aiRecommendedProducts().length) {
+            <div class="ai-product-suggestions">
+              <h3>Sản phẩm tương thích cao nhất dành cho bạn:</h3>
+              <div class="ai-products-grid">
+                @for (prod of aiRecommendedProducts(); track prod.id) {
+                  <div class="ai-card">
+                    <div class="ai-card-img">
+                      @if (prod.images.length) {
+                        <img [src]="prod.images[0]" [alt]="prod.name" loading="lazy">
+                      } @else {
+                        <div class="shirt-placeholder-mini">👕</div>
+                      }
+                      <span class="match-score-badge">Độ tương thích: {{ prod.matchScore }}%</span>
+                    </div>
+                    <div class="ai-card-info">
+                      <div class="ai-cat">{{ prod.categoryName || 'Áo nam' }}</div>
+                      <h4 class="ai-prod-name">{{ prod.name }}</h4>
+                      <p class="ai-reason">{{ prod.matchReason }}</p>
+                      <div class="ai-card-bottom">
+                        <strong>{{ prod.price | currency:'VND':'symbol':'1.0-0':'vi' }}</strong>
+                        <div class="ai-card-btns">
+                          <button type="button" class="btn-sm btn-outline" (click)="openQuickView(prod)">Xem nhanh</button>
+                          <a [routerLink]="['/product', prod.slug]" class="btn-sm btn-link" (click)="closeAiModal()">Chi tiết ↗</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- MODAL 2: HƯỚNG DẪN CHỌN SIZE & TÍNH SIZE THÔNG MINH             -->
+  <!-- ============================================================== -->
+  @if (showSizeGuideModal()) {
+    <div class="modal-backdrop" (click)="closeSizeGuide()">
+      <div class="modal-dialog size-modal-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="size-modal-title">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-pill">SIZE CALCULATOR</span>
+            <h2 id="size-modal-title">Bảng tính & Hướng dẫn chọn size NewMen</h2>
+            <p>Hệ thống gợi ý kích cỡ áo nam chuẩn xác theo chiều cao và cân nặng người Việt.</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeSizeGuide()" aria-label="Đóng">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Công cụ tính toán size tương tác -->
+          <div class="size-calc-card">
+            <h3>Nhập thông số cơ thể của bạn:</h3>
+            <div class="slider-row">
+              <div class="slider-box">
+                <label>Chiều cao: <strong>{{ sizeHeight() }} cm</strong></label>
+                <input type="range" min="150" max="195" [ngModel]="sizeHeight()" (ngModelChange)="sizeHeight.set($event)">
+                <div class="slider-range-labels"><span>150cm</span><span>170cm</span><span>195cm</span></div>
+              </div>
+              <div class="slider-box">
+                <label>Cân nặng: <strong>{{ sizeWeight() }} kg</strong></label>
+                <input type="range" min="45" max="105" [ngModel]="sizeWeight()" (ngModelChange)="sizeWeight.set($event)">
+                <div class="slider-range-labels"><span>45kg</span><span>65kg</span><span>105kg</span></div>
+              </div>
+            </div>
+
+            <div class="calc-result-box">
+              <div class="result-size-badge">
+                <small>KÍCH CỠ PHÙ HỢP NHẤT</small>
+                <strong>SIZE {{ calculatedSize().size }}</strong>
+              </div>
+              <div class="result-details">
+                <h4>{{ calculatedSize().fit }} · Chỉ số BMI {{ calculatedSize().bmi }}</h4>
+                <p>{{ calculatedSize().desc }}</p>
+                <div class="fit-note">💡 Nếu bạn thích mặc ôm body sát cơ thể: có thể hạ 1 size. Nếu thích mặc rộng rãi giấu bụng: chọn đúng size hoặc tăng 1 size.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bảng số đo chuẩn -->
+          <div class="size-table-wrap">
+            <h3>Bảng thông số kích thước áo chuẩn (cm):</h3>
+            <table class="size-specs-table">
+              <thead>
+                <tr>
+                  <th>Size</th>
+                  <th>Chiều cao (cm)</th>
+                  <th>Cân nặng (kg)</th>
+                  <th>Rộng vai (cm)</th>
+                  <th>Vòng ngực (cm)</th>
+                  <th>Dài áo (cm)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr [class.highlighted-row]="calculatedSize().size === 'S'">
+                  <td><strong>S</strong></td>
+                  <td>155 - 164</td>
+                  <td>48 - 56</td>
+                  <td>41 - 42</td>
+                  <td>88 - 92</td>
+                  <td>68</td>
+                </tr>
+                <tr [class.highlighted-row]="calculatedSize().size === 'M'">
+                  <td><strong>M</strong></td>
+                  <td>165 - 170</td>
+                  <td>57 - 65</td>
+                  <td>43 - 44</td>
+                  <td>92 - 96</td>
+                  <td>70</td>
+                </tr>
+                <tr [class.highlighted-row]="calculatedSize().size === 'L'">
+                  <td><strong>L</strong></td>
+                  <td>171 - 176</td>
+                  <td>66 - 74</td>
+                  <td>45 - 46</td>
+                  <td>96 - 100</td>
+                  <td>72</td>
+                </tr>
+                <tr [class.highlighted-row]="calculatedSize().size === 'XL'">
+                  <td><strong>XL</strong></td>
+                  <td>177 - 182</td>
+                  <td>75 - 83</td>
+                  <td>47 - 48</td>
+                  <td>100 - 106</td>
+                  <td>74</td>
+                </tr>
+                <tr [class.highlighted-row]="calculatedSize().size === 'XXL'">
+                  <td><strong>XXL</strong></td>
+                  <td>180 - 188</td>
+                  <td>84 - 95</td>
+                  <td>49 - 50</td>
+                  <td>106 - 114</td>
+                  <td>76</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="size-guarantee-note">
+            <span>🛡️ <strong>Chính sách đổi size an tâm:</strong> Quý khách được đổi size hoàn toàn miễn phí tại nhà trong vòng 7 ngày nếu mặc chưa vừa vặn. Bưu tá sẽ mang size mới tới tận nơi và nhận lại áo cũ.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- MODAL 3: LIÊN HỆ & SHOWROOM (Contact & Customer Care)           -->
+  <!-- ============================================================== -->
+  @if (showContactModal()) {
+    <div class="modal-backdrop" (click)="closeContact()">
+      <div class="modal-dialog contact-modal-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="contact-modal-title">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-pill">SHOWROOM & CSKH</span>
+            <h2 id="contact-modal-title">Liên hệ NewMen Store</h2>
+            <p>Đội ngũ chuyên viên tư vấn luôn sẵn sàng hỗ trợ giải đáp thắc mắc và tiếp nhận yêu cầu của quý khách.</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeContact()" aria-label="Đóng">✕</button>
+        </div>
+
+        <div class="modal-body contact-modal-grid">
+          <!-- Cột trái: Thông tin Showroom -->
+          <div class="contact-info-col">
+            <div class="contact-card-box">
+              <span class="contact-icon">📞</span>
+              <div>
+                <strong>Hotline đặt hàng & CSKH:</strong>
+                <p>1900 2026 / 0988 773 373</p>
+                <small>Thời gian trực máy: 08:30 — 21:30 hàng ngày</small>
+              </div>
+            </div>
+
+            <div class="contact-card-box">
+              <span class="contact-icon">✉️</span>
+              <div>
+                <strong>Email hỗ trợ:</strong>
+                <p>cskh@newmen.vn / store@newmen.vn</p>
+                <small>Phản hồi trong vòng 2 giờ làm việc</small>
+              </div>
+            </div>
+
+            <div class="contact-showrooms-box">
+              <h3>🏛️ Hệ thống cửa hàng NewMen</h3>
+              <div class="showroom-line">
+                <strong>Showroom Hoàn Kiếm:</strong>
+                <span>12 Lê Thái Tổ, P. Hàng Trống, Hoàn Kiếm, Hà Nội</span>
+              </div>
+              <div class="showroom-line">
+                <strong>Showroom Ba Đình:</strong>
+                <span>88 Kim Mã, P. Kim Mã, Ba Đình, Hà Nội</span>
+              </div>
+              <div class="showroom-line">
+                <strong>Showroom Quận 1:</strong>
+                <span>15 Nguyễn Thị Minh Khai, P. Bến Nghé, Q.1, TP. HCM</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cột phải: Form gửi liên hệ -->
+          <div class="contact-form-col">
+            <h3>Gửi lời nhắn cho chúng tôi:</h3>
+            @if (contactNotice()) {
+              <div class="form-alert-success">{{ contactNotice() }}</div>
+            }
+            @if (contactError()) {
+              <div class="form-alert-error">{{ contactError() }}</div>
+            }
+
+            <form (ngSubmit)="submitContactForm()" class="contact-form">
+              <div class="form-field">
+                <label for="contact-name">Họ và tên *</label>
+                <input id="contact-name" type="text" [ngModel]="contactName()" (ngModelChange)="contactName.set($event)" name="contactName" placeholder="Nguyễn Văn A" required>
+              </div>
+
+              <div class="form-field">
+                <label for="contact-phone">Số điện thoại liên hệ *</label>
+                <input id="contact-phone" type="tel" [ngModel]="contactPhone()" (ngModelChange)="contactPhone.set($event)" name="contactPhone" placeholder="09xx xxx xxx" required>
+              </div>
+
+              <div class="form-field">
+                <label for="contact-email">Email (tùy chọn)</label>
+                <input id="contact-email" type="email" [ngModel]="contactEmail()" (ngModelChange)="contactEmail.set($event)" name="contactEmail" placeholder="email@example.com">
+              </div>
+
+              <div class="form-field">
+                <label for="contact-city">Tỉnh / Thành phố</label>
+                <select id="contact-city" [ngModel]="contactCity()" (ngModelChange)="contactCity.set($event)" name="contactCity">
+                  <option value="Hà Nội">Hà Nội</option>
+                  <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                  <option value="Đà Nẵng">Đà Nẵng</option>
+                  <option value="Hải Phòng">Hải Phòng</option>
+                  <option value="Khác">Tỉnh thành khác</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="contact-content">Nội dung thắc mắc / Cần hỗ trợ *</label>
+                <textarea id="contact-content" rows="3" [ngModel]="contactContent()" (ngModelChange)="contactContent.set($event)" name="contactContent" placeholder="Mô tả chi tiết câu hỏi về sản phẩm, tư vấn size hoặc đơn hàng..." required></textarea>
+              </div>
+
+              <button type="submit" class="btn-primary submit-contact-btn" [disabled]="contactBusy()">
+                {{ contactBusy() ? 'Đang gửi thông tin...' : 'Gửi thông tin liên hệ ↗' }}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- MODAL 4: XEM NHANH SẢN PHẨM (Quick View Modal)                  -->
+  <!-- ============================================================== -->
+  @if (quickViewProduct(); as p) {
+    <div class="modal-backdrop" (click)="closeQuickView()">
+      <div class="modal-dialog quick-view-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" [attr.aria-label]="'Xem nhanh ' + p.name">
+        <button type="button" class="modal-close-btn" (click)="closeQuickView()" aria-label="Đóng">✕</button>
+
+        <div class="quick-view-grid">
+          <!-- Cột ảnh -->
+          <div class="qv-gallery-col">
+            <div class="qv-main-image">
+              @if (p.images.length) {
+                <img [src]="p.images[qvActiveImageIndex()] || p.images[0]" [alt]="p.name">
+              } @else {
+                <div class="shirt-placeholder-lg">👕</div>
+              }
+            </div>
+            @if (p.images && p.images.length > 1) {
+              <div class="qv-thumbs">
+                @for (img of p.images; track $index) {
+                  <button type="button" [class.active]="$index === qvActiveImageIndex()" (click)="qvActiveImageIndex.set($index)">
+                    <img [src]="img" [alt]="p.name + ' góc ' + ($index + 1)">
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Cột thông tin sản phẩm -->
+          <div class="qv-info-col">
+            <span class="qv-cat-badge">{{ p.categoryName || 'BỘ SƯU TẬP NEWMEN' }}</span>
+            <h2 class="qv-prod-title">{{ p.name }}</h2>
+            <div class="qv-sku-code">Mã: {{ p.code }}</div>
+
+            <div class="qv-price-row">
+              <span class="qv-current-price">{{ p.price | currency:'VND':'symbol':'1.0-0':'vi' }}</span>
+              @if (p.originalPrice && p.originalPrice > p.price) {
+                <del class="qv-original-price">{{ p.originalPrice | currency:'VND':'symbol':'1.0-0':'vi' }}</del>
+                <span class="qv-discount-pill">-{{ (((p.originalPrice - p.price) / p.originalPrice) * 100).toFixed(0) }}%</span>
+              }
+            </div>
+
+            <p class="qv-desc">{{ p.description || 'Chất liệu vải cao cấp tuyển chọn, đường may tỉ mỉ, độ bền cao và đứng dáng qua nhiều lần giặt.' }}</p>
+
+            <!-- Bộ chọn màu sắc -->
+            @if (qvColors().length) {
+              <div class="qv-variant-section">
+                <label>Màu sắc: <strong>{{ qvSelectedColor() || 'Chọn màu' }}</strong></label>
+                <div class="qv-chips">
+                  @for (col of qvColors(); track col) {
+                    <button type="button" class="qv-chip" [class.selected]="qvSelectedColor() === col" (click)="selectQvColor(col)">
+                      {{ col }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Bộ chọn kích thước -->
+            <div class="qv-variant-section">
+              <div class="qv-size-head">
+                <label>Kích thước: <strong>{{ qvSelectedSize() || 'Chọn size' }}</strong></label>
+                <button type="button" class="qv-size-guide-trigger" (click)="openSizeGuide()">Bảng size 📏</button>
+              </div>
+              <div class="qv-chips">
+                @for (item of qvSizes(); track item.size) {
+                  <button type="button" class="qv-chip qv-size-chip" [class.selected]="qvSelectedSize() === item.size" [disabled]="item.stock <= 0" (click)="selectQvSize(item.size)">
+                    {{ item.size }}
+                    @if (item.stock <= 0) { <small>(Hết)</small> }
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Tình trạng kho -->
+            <div class="qv-stock-status">
+              @if (qvCurrentVariant(); as curVar) {
+                @if (curVar.stock > 0) {
+                  <span class="status-in-stock">● Sẵn hàng (còn {{ curVar.stock }} chiếc)</span>
+                } @else {
+                  <span class="status-out-of-stock">○ Tạm hết hàng biến thể này</span>
+                }
+              }
+            </div>
+
+            <!-- Bộ chọn số lượng & nút thêm vào giỏ -->
+            <div class="qv-buy-actions">
+              <div class="qv-qty-picker">
+                <button type="button" (click)="changeQvQuantity(-1)" [disabled]="qvQuantity() <= 1">−</button>
+                <span>{{ qvQuantity() }}</span>
+                <button type="button" (click)="changeQvQuantity(1)">+</button>
+              </div>
+
+              <button type="button" class="btn-primary qv-add-btn" [disabled]="!qvCurrentVariant() || (qvCurrentVariant()?.stock || 0) <= 0" (click)="addQvToCart(false)">
+                Thêm vào giỏ hàng
+              </button>
+              <button type="button" class="btn-secondary qv-buy-now-btn" [disabled]="!qvCurrentVariant() || (qvCurrentVariant()?.stock || 0) <= 0" (click)="addQvToCart(true)">
+                Mua ngay
+              </button>
+            </div>
+
+            @if (qvToast()) {
+              <div class="qv-toast-msg" role="status">{{ qvToast() }}</div>
+            }
+
+            <div class="qv-detail-link-wrap">
+              <a [routerLink]="['/product', p.slug]" (click)="closeQuickView()" class="qv-full-detail-link">
+                Xem chi tiết sản phẩm đầy đủ ↗
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+}

@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: newmen-store-api
+  profiles:
+    default: dev
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+  jpa:
+    open-in-view: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  jackson:
+    default-property-inclusion: non_null
+server:
+  port: ${PORT:8188}
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ORIGINS:http://localhost:4220,http://127.0.0.1:4220}
+  uploads:
+    storage-dir: ${NEWMEN_UPLOAD_DIR:./uploads}
+    max-bytes: 5242880
+  checkout:
+    shipping-fee: 25000
+    free-shipping-threshold: ${FREE_SHIPPING_THRESHOLD:899000}
+    max-quantity-per-line: 20
+  integrations:
+    payment:
+      mode: sample
+      callback-url: ${PAYMENT_CALLBACK_URL:https://example.invalid/payment/callback}
+    shipping:
+      mode: sample
+      api-url: ${SHIPPING_API_URL:https://example.invalid/api}

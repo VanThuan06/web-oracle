@@ -1,0 +1,2123 @@
+<div class="admin-shell">
+  <!-- TOPBAR -->
+  <header class="admin-topbar">
+    <div class="topbar-left">
+      <a routerLink="/admin" class="topbar-brand">
+        <span class="brand-logo">newMen</span>
+        <span class="brand-badge">ADMIN CONSOLE</span>
+      </a>
+      <div class="topbar-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Tìm nhanh đơn hàng, sản phẩm, khách hàng..." [ngModel]="globalSearch()" (ngModelChange)="globalSearch.set($event)">
+      </div>
+    </div>
+    <div class="topbar-right">
+      @if (pendingOrderCount() > 0) {
+        <button type="button" class="order-alert-pill" (click)="selectTab('orders'); setOrderFilterStatus('PENDING')">
+          <span class="pulse-dot"></span>
+          <span>🔔 {{ pendingOrderCount() }} đơn chờ duyệt</span>
+        </button>
+      }
+      <button type="button" class="btn btn-outline btn-sm" (click)="triggerReseed()" title="Nạp đầy đủ 32 bảng và toàn bộ luồng quy trình">
+        ⚡ Nạp dữ liệu mẫu
+      </button>
+      <a routerLink="/" class="storefront-link" target="_blank" title="Xem cửa hàng bán lẻ">
+        🏪 Cửa hàng ↗
+      </a>
+      @if (user()) {
+        <div class="user-profile">
+          <div class="user-avatar">{{ user()?.fullName?.charAt(0) || 'A' }}</div>
+          <div class="user-info">
+            <strong class="user-name">{{ user()?.fullName }}</strong>
+            <span class="user-role">{{ user()?.role === 'ADMIN' ? 'Quản trị viên' : 'Nhân viên quầy' }}</span>
+          </div>
+        </div>
+        <button type="button" class="signout-btn" (click)="signOut()" title="Đăng xuất khỏi hệ thống">
+          Đăng xuất
+        </button>
+      } @else {
+        <button type="button" class="btn btn-primary btn-sm" (click)="quickLogin('admin@newmen.local', 'ChangeMe123!')" title="Đăng nhập tài khoản Quản trị">
+          🔐 Đăng nhập Admin
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (!user()) {
+    <div class="admin-login-wrapper">
+      <div class="admin-login-card">
+        <div class="login-brand">
+          <span class="brand-logo">newMen</span>
+          <span class="brand-badge">ADMIN CONSOLE</span>
+        </div>
+        <h2>Đăng nhập Hệ thống Quản trị</h2>
+        <p class="login-sub">Vui lòng đăng nhập tài khoản Quản trị viên để truy cập 11 phân hệ và 32 bảng dữ liệu NewMen Store.</p>
+
+        @if (error()) {
+          <div class="flash-alert error mb-4">
+            <span>⚠ {{ error() }}</span>
+          </div>
+        }
+
+        <div class="quick-login-pills">
+          <button type="button" class="btn btn-primary btn-block" (click)="quickLogin('admin@newmen.local', 'ChangeMe123!')">
+            ⚡ Đăng nhập 1-chạm Quản trị viên (admin@newmen.local)
+          </button>
+          <button type="button" class="btn btn-outline btn-block" (click)="quickLogin('staff@newmen.local', 'ChangeMe123!')">
+            👔 Đăng nhập Nhân viên POS (staff@newmen.local)
+          </button>
+        </div>
+
+        <div class="login-divider"><span>Hoặc nhập email & mật khẩu</span></div>
+
+        <form [formGroup]="loginForm" (ngSubmit)="submitLogin()" class="login-form">
+          <div class="form-group">
+            <label>Email tài khoản</label>
+            <input type="email" formControlName="email" class="form-control" placeholder="admin@newmen.local">
+          </div>
+          <div class="form-group">
+            <label>Mật khẩu</label>
+            <input type="password" formControlName="password" class="form-control" placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn btn-dark btn-block btn-lg" [disabled]="loginSubmitting()">
+            @if (loginSubmitting()) { <span>Đang xác thực...</span> } @else { <span>🔐 Đăng nhập vào Quản trị</span> }
+          </button>
+        </form>
+      </div>
+    </div>
+  } @else {
+
+  <!-- NAVIGATION BAR (DEEP NAVY) -->
+  <nav class="admin-navbar" aria-label="Điều hướng chính">
+    <div class="nav-container">
+      <button type="button" [class.active]="tab() === 'overview'" (click)="selectTab('overview')">
+        <span class="nav-icon">📊</span> Bảng điều khiển
+      </button>
+      <button type="button" [class.active]="tab() === 'pos'" (click)="selectTab('pos')">
+        <span class="nav-icon">🛒</span> Bán hàng tại quầy (POS)
+      </button>
+      <button type="button" [class.active]="tab() === 'orders'" (click)="selectTab('orders')">
+        <span class="nav-icon">📦</span> Quản lý Đơn hàng
+      </button>
+      <button type="button" [class.active]="tab() === 'products'" (click)="selectTab('products')">
+        <span class="nav-icon">👔</span> Sản phẩm & Biến thể
+      </button>
+      <button type="button" [class.active]="tab() === 'attributes'" (click)="selectTab('attributes')">
+        <span class="nav-icon">🏷️</span> Thuộc tính (9 mục)
+      </button>
+      <button type="button" [class.active]="tab() === 'fault-products'" (click)="selectTab('fault-products')">
+        <span class="nav-icon">⚠️</span> Sản phẩm lỗi/hủy
+      </button>
+      <button type="button" [class.active]="tab() === 'promotions'" (click)="selectTab('promotions')">
+        <span class="nav-icon">🎁</span> Khuyến mãi & Voucher
+      </button>
+      <button type="button" [class.active]="tab() === 'customers'" (click)="selectTab('customers')">
+        <span class="nav-icon">👥</span> Khách hàng
+      </button>
+      @if (user()?.role === 'ADMIN') {
+        <button type="button" [class.active]="tab() === 'staff'" (click)="selectTab('staff')">
+          <span class="nav-icon">👔</span> Nhân viên & Role
+        </button>
+      }
+      <button type="button" [class.active]="tab() === 'banners'" (click)="selectTab('banners')">
+        <span class="nav-icon">🖼️</span> Banners
+      </button>
+      <button type="button" [class.active]="tab() === 'feedback'" (click)="selectTab('feedback')">
+        <span class="nav-icon">💬</span> Đánh giá & Liên hệ
+      </button>
+    </div>
+  </nav>
+
+  <!-- ALERTS & MESSAGES -->
+  @if (notice()) {
+    <div class="flash-alert success">
+      <span>✓ {{ notice() }}</span>
+      <button type="button" (click)="notice.set('')">✕</button>
+    </div>
+  }
+  @if (error()) {
+    <div class="flash-alert error">
+      <span>⚠ {{ error() }}</span>
+      <button type="button" (click)="error.set('')">✕</button>
+    </div>
+  }
+
+  <!-- MAIN VIEWPORT -->
+  <main class="admin-main">
+    <!-- 1. OVERVIEW / DASHBOARD (HÌNH 3.7) -->
+    @if (tab() === 'overview') {
+      <div class="view-header">
+        <div>
+          <h2>Bảng điều khiển & Thống kê kinh doanh</h2>
+          <p class="view-sub">Theo dõi doanh thu, tốc độ xuất kho và khách hàng trung thành NewMen Store</p>
+        </div>
+        <div class="header-actions">
+          <div class="range-selector">
+            <button type="button" [class.active]="dashboardRange() === 'DAY'" (click)="setDashboardRange('DAY')">Ngày</button>
+            <button type="button" [class.active]="dashboardRange() === 'WEEK'" (click)="setDashboardRange('WEEK')">Tuần</button>
+            <button type="button" [class.active]="dashboardRange() === 'MONTH'" (click)="setDashboardRange('MONTH')">Tháng</button>
+            <button type="button" [class.active]="dashboardRange() === 'YEAR'" (click)="setDashboardRange('YEAR')">Năm</button>
+          </div>
+          <button type="button" class="btn btn-outline" (click)="exportReport()">Xuất CSV báo cáo</button>
+          <button type="button" class="btn btn-primary" (click)="loadOverview()">↻ Làm mới</button>
+        </div>
+      </div>
+
+      <!-- 4 KPI CARDS -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon money">₫</div>
+          <div class="kpi-content">
+            <span class="kpi-label">TỔNG DOANH THU</span>
+            <strong class="kpi-value">{{ (dashboardStats()?.totalRevenue ?? summary()?.revenue ?? 0) | currency:'VND':'symbol':'1.0-0':'vi' }}</strong>
+            <span class="kpi-hint">Đã bao gồm đơn Online và POS</span>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon orders">📦</div>
+          <div class="kpi-content">
+            <span class="kpi-label">SỐ HÓA ĐƠN</span>
+            <strong class="kpi-value">{{ dashboardStats()?.totalOrders ?? summary()?.orderCount ?? 0 }} đơn</strong>
+            <span class="kpi-hint">Tỉ lệ giao dịch hoàn tất</span>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon products">👔</div>
+          <div class="kpi-content">
+            <span class="kpi-label">SẢN PHẨM ĐÃ BÁN</span>
+            <strong class="kpi-value">{{ dashboardStats()?.totalProductsSold ?? summary()?.unitsSold ?? 0 }} chiếc</strong>
+            <span class="kpi-hint">Áo nam các loại</span>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon customers">👥</div>
+          <div class="kpi-content">
+            <span class="kpi-label">KHÁCH HÀNG MỚI</span>
+            <strong class="kpi-value">{{ dashboardStats()?.totalCustomers ?? summary()?.customerCount ?? 0 }} khách</strong>
+            <span class="kpi-hint">Tài khoản thành viên hoạt động</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- REVENUE TREND SVG COLUMN CHART -->
+      <div class="card chart-card">
+        <div class="card-header">
+          <div>
+            <h3>Xu hướng doanh thu theo kỳ</h3>
+            <p class="card-subtitle">Biểu đồ thể hiện biến động doanh thu theo từng mốc thời gian</p>
+          </div>
+          <span class="card-badge">Cột trực quan</span>
+        </div>
+        <div class="chart-container">
+          @if (dashboardStats()?.revenueChart?.length) {
+            @let points = dashboardStats()!.revenueChart!;
+            @let totalPts = points.length;
+            @let maxVal = maxChartValue();
+            @let barW = chartBarWidth(totalPts);
+            <div class="svg-chart-wrap">
+              <svg viewBox="0 0 800 220" class="revenue-chart-svg" preserveAspectRatio="xMidYMid meet">
+                <!-- Y-Axis Scale Guides & Labels -->
+                <line x1="55" y1="30" x2="780" y2="30" stroke="#E2E8F0" stroke-dasharray="4" />
+                <text x="46" y="34" text-anchor="end" font-size="10" fill="#94A3B8" font-weight="500">{{ (maxVal / 1000000).toFixed(1) }}M</text>
+
+                <line x1="55" y1="95" x2="780" y2="95" stroke="#E2E8F0" stroke-dasharray="4" />
+                <text x="46" y="99" text-anchor="end" font-size="10" fill="#94A3B8" font-weight="500">{{ (maxVal / 2000000).toFixed(1) }}M</text>
+
+                <line x1="55" y1="160" x2="780" y2="160" stroke="#CBD5E1" stroke-width="1.5" />
+                <text x="46" y="164" text-anchor="end" font-size="10" fill="#94A3B8" font-weight="500">0</text>
+
+                <!-- Columns -->
+                @for (pt of points; track pt.label; let i = $index) {
+                  @let x = chartBarX(i, totalPts);
+                  @let h = barHeight(pt.value, maxVal);
+                  <g class="chart-bar-group">
+                    <title>{{ pt.label }}: {{ pt.value | currency:'VND':'symbol':'1.0-0':'vi' }} ({{ pt.count || 0 }} đơn)</title>
+                    @if (h > 0) {
+                      <rect [attr.x]="x" [attr.y]="160 - h" [attr.width]="barW" [attr.height]="h" rx="4" class="chart-bar active-bar" fill="#183B7A" />
+                      <text [attr.x]="x + barW / 2" [attr.y]="150 - h" text-anchor="middle" font-size="10" font-weight="700" fill="#183B7A">
+                        {{ (pt.value / 1000000).toFixed(1) }}M
+                      </text>
+                    } @else {
+                      <rect [attr.x]="x" y="157" [attr.width]="barW" height="3" rx="1.5" fill="#E2E8F0" class="chart-bar zero-bar" />
+                    }
+                    @if (shouldShowChartLabel(i, totalPts, pt.value)) {
+                      <text [attr.x]="x + barW / 2" y="180" text-anchor="middle" font-size="10" font-weight="500" fill="#64748B">
+                        {{ pt.label }}
+                      </text>
+                    }
+                  </g>
+                }
+              </svg>
+            </div>
+          } @else {
+            <p class="empty-state">Đang cập nhật biểu đồ doanh thu theo thời gian thực...</p>
+          }
+        </div>
+      </div>
+
+      <!-- 2-COLUMN PANELS: TOP PRODUCTS & TOP CUSTOMERS -->
+      <div class="two-col-grid">
+        <div class="card">
+          <div class="card-header">
+            <h3>Top sản phẩm bán chạy nhất</h3>
+            <span class="card-badge">Theo doanh thu</span>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Hạng</th>
+                <th>Tên sản phẩm</th>
+                <th>Số lượng</th>
+                <th class="text-right">Doanh thu</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of dashboardStats()?.topProducts; track item.productName; let i = $index) {
+                <tr>
+                  <td><span class="rank-badge">{{ i + 1 }}</span></td>
+                  <td><strong>{{ item.productName }}</strong></td>
+                  <td><span class="badge">{{ item.quantitySold }} chiếc</span></td>
+                  <td class="text-right font-mono font-bold">{{ item.revenue | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="4" class="text-center">Chưa có số liệu bán hàng.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Top khách hàng thân thiết</h3>
+            <span class="card-badge">Điểm thưởng & Chi tiêu</span>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Khách hàng</th>
+                <th>Số điện thoại</th>
+                <th>Số đơn</th>
+                <th class="text-right">Tổng chi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of dashboardStats()?.topCustomers; track c.id) {
+                <tr>
+                  <td><strong>{{ c.fullName }}</strong></td>
+                  <td>{{ c.phone || '—' }}</td>
+                  <td><span class="badge">{{ c.ordersCount || 0 }} đơn</span></td>
+                  <td class="text-right font-mono font-bold">{{ (c.totalSpent || 0) | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="4" class="text-center">Chưa có khách hàng ghi nhận.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- 2. POS: BÁN HÀNG TẠI QUẦY (HÌNH 3.3 & 3.4) -->
+    @if (tab() === 'pos') {
+      <div class="view-header">
+        <div>
+          <h2>Quầy bán hàng tại cửa hàng (POS)</h2>
+          <p class="view-sub">Quét mã barcode, chọn khách, áp dụng voucher và thanh toán nhanh</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-primary" (click)="newPosCart()" [disabled]="posCarts().length >= 5">
+            + Hóa đơn mới ({{ posCarts().length }}/5)
+          </button>
+        </div>
+      </div>
+
+      <!-- DRAFT BILL TABS -->
+      <div class="pos-draft-tabs">
+        @for (cart of posCarts(); track cart.cartId; let i = $index) {
+          <div class="pos-tab" [class.active]="activeCart() === cart.cartId" (click)="activeCart.set(cart.cartId)">
+            <span>Hóa đơn {{ i + 1 }}</span>
+            <span class="item-count">{{ cart.items.length }}</span>
+            <button type="button" class="close-tab" (click)="closePosCart(cart); $event.stopPropagation()">✕</button>
+          </div>
+        } @empty {
+          <div class="empty-tab-hint">Chưa có hóa đơn nào mở. Bấm "+ Hóa đơn mới" để bắt đầu.</div>
+        }
+      </div>
+
+      <!-- POS WORKSPACE: 2 COLUMNS -->
+      <div class="pos-grid">
+        <!-- LEFT: PRODUCT SCAN & MANUAL SELECTION CATALOG -->
+        <div class="pos-left">
+          <div class="card pos-catalog-card">
+            <!-- SEARCH & BARCODE INPUT -->
+            <div class="pos-search-bar">
+              <div class="pos-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input
+                  type="text"
+                  class="pos-search-input"
+                  placeholder="Quét mã barcode hoặc gõ tên áo, mã SKU, màu, size (VD: sơ mi, polo, 893...)..."
+                  [ngModel]="posQuery()"
+                  (ngModelChange)="posQuery.set($event)"
+                  (keyup.enter)="searchPos()"
+                >
+                @if (posQuery()) {
+                  <button type="button" class="clear-query-btn" (click)="posQuery.set('')" title="Xóa tìm kiếm">✕</button>
+                }
+              </div>
+              <div class="pos-view-toggles">
+                <button
+                  type="button"
+                  class="view-toggle-btn"
+                  [class.active]="posViewMode() === 'grid'"
+                  (click)="posViewMode.set('grid')"
+                  title="Dạng thẻ ảnh"
+                >
+                  ⊞ Lưới ảnh
+                </button>
+                <button
+                  type="button"
+                  class="view-toggle-btn"
+                  [class.active]="posViewMode() === 'table'"
+                  (click)="posViewMode.set('table')"
+                  title="Dạng bảng gọn"
+                >
+                  ☰ Bảng
+                </button>
+              </div>
+            </div>
+
+            <!-- CATEGORY FILTER CHIPS -->
+            <div class="pos-category-filters">
+              <button
+                type="button"
+                class="pos-cat-pill"
+                [class.active]="posSelectedCategory() === 'ALL'"
+                (click)="posSelectedCategory.set('ALL')"
+              >
+                Tất cả ({{ posCatalog().length }})
+              </button>
+              @for (cat of posCategories(); track cat) {
+                <button
+                  type="button"
+                  class="pos-cat-pill"
+                  [class.active]="posSelectedCategory() === cat"
+                  (click)="posSelectedCategory.set(cat)"
+                >
+                  {{ cat }}
+                </button>
+              }
+            </div>
+
+            <!-- PRODUCT DISPLAY RESULTS -->
+            <div class="pos-catalog-scroll">
+              @if (posDisplayProducts().length) {
+                @if (posViewMode() === 'grid') {
+                  <div class="pos-product-tiles-grid">
+                    @for (p of posDisplayProducts(); track p.id) {
+                      <div class="pos-tile-card">
+                        <div class="pos-tile-header">
+                          <img
+                            [src]="p.images[0] || '/media/product-shirt-white.jpg'"
+                            [alt]="p.name"
+                            class="pos-tile-thumb"
+                            onerror="this.src='/media/product-shirt-white.jpg'"
+                          >
+                          <div class="pos-tile-meta">
+                            <div class="pos-meta-top">
+                              <span class="pos-sku-badge">{{ p.code }}</span>
+                              @if (p.categoryName) {
+                                <span class="pos-cat-badge">{{ p.categoryName }}</span>
+                              }
+                            </div>
+                            <h4 class="pos-tile-name" [title]="p.name">{{ p.name }}</h4>
+                            <div class="pos-tile-price-row">
+                              <span class="pos-tile-price">{{ p.price | currency:'VND':'symbol':'1.0-0':'vi' }}</span>
+                              <span class="pos-tile-stock" [class.low-stock]="getProductTotalStock(p) < 10">
+                                Tồn: <strong>{{ getProductTotalStock(p) }}</strong>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- VARIANTS QUICK PICKER -->
+                        <div class="pos-variants-section">
+                          <span class="variants-hint">Bấm chọn màu & size để thêm vào hóa đơn:</span>
+                          <div class="variants-chips-wrap">
+                            @for (v of p.variants; track v.id) {
+                              <button
+                                type="button"
+                                class="pos-variant-btn"
+                                [disabled]="v.stock < 1"
+                                (click)="addPosItem(p, v.id)"
+                                [title]="'Mã vạch: ' + (v.barcode || 'N/A') + ' · Giá: ' + (v.price | currency:'VND':'symbol':'1.0-0':'vi')"
+                              >
+                                <span class="v-label"><strong>{{ v.color }}</strong> · {{ v.size }}</span>
+                                <span class="v-stock" [class.zero-stock]="v.stock < 1">
+                                  {{ v.stock > 0 ? (v.stock + 'c') : 'Hết' }}
+                                </span>
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <!-- TABLE VIEW MODE -->
+                  <table class="data-table pos-table-view">
+                    <thead>
+                      <tr>
+                        <th style="width: 55px;">Ảnh</th>
+                        <th>Sản phẩm & Mã SKU</th>
+                        <th>Giá bán</th>
+                        <th>Tổng tồn</th>
+                        <th>Chọn Màu - Size thêm nhanh</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of posDisplayProducts(); track p.id) {
+                        <tr>
+                          <td>
+                            <img
+                              [src]="p.images[0] || '/media/product-shirt-white.jpg'"
+                              [alt]="p.name"
+                              class="table-thumb"
+                              onerror="this.src='/media/product-shirt-white.jpg'"
+                            >
+                          </td>
+                          <td>
+                            <strong>{{ p.name }}</strong>
+                            <div class="code-tag">{{ p.code }}</div>
+                          </td>
+                          <td class="font-bold text-primary">{{ p.price | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                          <td>
+                            <span class="badge" [class.badge-warning]="getProductTotalStock(p) < 10">
+                              {{ getProductTotalStock(p) }} chiếc
+                            </span>
+                          </td>
+                          <td>
+                            <div class="variants-chips-wrap">
+                              @for (v of p.variants; track v.id) {
+                                <button
+                                  type="button"
+                                  class="pos-variant-btn"
+                                  [disabled]="v.stock < 1"
+                                  (click)="addPosItem(p, v.id)"
+                                  [title]="'Mã vạch: ' + (v.barcode || 'N/A')"
+                                >
+                                  <span class="v-label"><strong>{{ v.color }}</strong> · {{ v.size }}</span>
+                                  <span class="v-stock" [class.zero-stock]="v.stock < 1">
+                                    {{ v.stock > 0 ? (v.stock + 'c') : 'Hết' }}
+                                  </span>
+                                </button>
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                }
+              } @else {
+                <div class="pos-empty-state">
+                  <div class="empty-icon">🏷️</div>
+                  <h4>Không tìm thấy sản phẩm nào phù hợp</h4>
+                  <p>Thử đổi từ khóa tìm kiếm hoặc chọn danh mục "Tất cả" để xem danh sách toàn bộ sản phẩm tại quầy.</p>
+                  <button type="button" class="btn btn-outline btn-sm" (click)="posQuery.set(''); posSelectedCategory.set('ALL')">
+                    ↻ Xem tất cả sản phẩm
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: BILLING PANE -->
+        <div class="pos-right">
+          @if (selectedPosCart(); as cart) {
+            <div class="card bill-card">
+              <div class="bill-header">
+                <h3>Chi tiết hóa đơn</h3>
+                <span class="bill-id">Mã tạm #{{ cart.cartId }}</span>
+              </div>
+
+              <!-- CUSTOMER SELECT & QUICK ADD -->
+              <div class="pos-customer-section">
+                <div class="customer-picker">
+                  <input type="text" placeholder="Tìm tên/SĐT khách..." [ngModel]="posCustomerQuery()" (ngModelChange)="posCustomerQuery.set($event)" (keyup.enter)="searchPosCustomer()">
+                  <button type="button" class="btn btn-outline btn-sm" (click)="searchPosCustomer()">Tìm</button>
+                  <button type="button" class="btn btn-secondary btn-sm" (click)="openQuickCustomerModal()">+ Thêm</button>
+                </div>
+                @if (posCustomerMatches().length) {
+                  <div class="customer-dropdown">
+                    @for (c of posCustomerMatches(); track c.id) {
+                      <div class="customer-opt" (click)="selectPosCustomer(c)">
+                        <strong>{{ c.fullName }}</strong> · {{ c.phone }}
+                      </div>
+                    }
+                  </div>
+                }
+                @if (selectedPosCustomer(); as c) {
+                  <div class="selected-customer-pill">
+                    <span>Khách: <strong>{{ c.fullName }}</strong> ({{ c.phone || 'Không có SĐT' }})</span>
+                    <button type="button" (click)="selectedPosCustomer.set(null); posCustomerQuery.set('')">✕</button>
+                  </div>
+                }
+              </div>
+
+              <!-- CART ITEMS TABLE -->
+              <div class="bill-items-wrap">
+                <table class="bill-items-table">
+                  <thead>
+                    <tr>
+                      <th>Sản phẩm</th>
+                      <th style="width: 72px; text-align: center;">SL</th>
+                      <th style="width: 80px; text-align: right;">Tiền</th>
+                      <th style="width: 24px;"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of cart.items; track item.variantId) {
+                      <tr>
+                        <td class="col-product">
+                          <strong class="item-name">{{ item.productName }}</strong>
+                          <div class="item-variant">{{ item.color }} · {{ item.size }} <span class="item-unit-price">({{ item.unitPrice | currency:'VND':'symbol':'1.0-0':'vi' }})</span></div>
+                        </td>
+                        <td class="col-qty">
+                          <div class="qty-stepper">
+                            <button type="button" (click)="updatePosQuantity(cart, item.variantId, item.quantity - 1)">−</button>
+                            <span>{{ item.quantity }}</span>
+                            <button type="button" (click)="updatePosQuantity(cart, item.variantId, item.quantity + 1)">+</button>
+                          </div>
+                        </td>
+                        <td class="col-total text-right font-bold">
+                          {{ (item.unitPrice * item.quantity) | currency:'VND':'symbol':'1.0-0':'vi' }}
+                        </td>
+                        <td class="col-action text-center">
+                          <button type="button" class="btn-del-item" title="Xóa món" (click)="updatePosQuantity(cart, item.variantId, 0)">✕</button>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr><td colspan="4" class="text-center py-4 text-muted">Chưa có sản phẩm trong hóa đơn.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- VOUCHER & DELIVERY -->
+              <div class="pos-addons">
+                <div class="voucher-input-row">
+                  <input type="text" placeholder="Mã giảm giá (VD: NEWSEASON)..." [ngModel]="posVoucherCode()" (ngModelChange)="posVoucherCode.set($event)">
+                  <button type="button" class="btn btn-outline btn-sm" (click)="applyPosVoucher()">Áp dụng</button>
+                </div>
+                <div class="delivery-toggle-row">
+                  <label>
+                    <input type="checkbox" [ngModel]="posDelivery()" (ngModelChange)="posDelivery.set($event)">
+                    <span>Giao hàng tận nơi</span>
+                  </label>
+                </div>
+                @if (posDelivery()) {
+                  <div class="pos-delivery-form" [formGroup]="posShipForm">
+                    <input formControlName="recipientName" placeholder="Tên người nhận">
+                    <input formControlName="phone" placeholder="Số điện thoại nhận">
+                    <input formControlName="line1" placeholder="Địa chỉ chi tiết (số nhà, đường)">
+                    <div class="row-2">
+                      <input formControlName="ward" placeholder="Phường / Xã">
+                      <input formControlName="district" placeholder="Quận / Huyện">
+                    </div>
+                    <div class="row-2">
+                      <input formControlName="province" placeholder="Tỉnh / Thành phố">
+                      <input type="number" placeholder="Phí ship (₫)" [ngModel]="posFreight()" (ngModelChange)="posFreight.set($event)" [ngModelOptions]="{standalone:true}">
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- PAYMENT METHOD TABS -->
+              <div class="payment-methods">
+                <button type="button" [class.active]="posPaymentMethod() === 'CASH'" (click)="posPaymentMethod.set('CASH')">💵 Tiền mặt</button>
+                <button type="button" [class.active]="posPaymentMethod() === 'TRANSFER'" (click)="posPaymentMethod.set('TRANSFER')">📱 Chuyển khoản</button>
+                <button type="button" [class.active]="posPaymentMethod() === 'CARD'" (click)="posPaymentMethod.set('CARD')">💳 Quẹt thẻ</button>
+              </div>
+
+              <!-- TOTALS BREAKDOWN -->
+              <div class="bill-summary">
+                <div class="summary-row">
+                  <span>Tạm tính</span>
+                  <span>{{ cart.subtotal | currency:'VND':'symbol':'1.0-0':'vi' }}</span>
+                </div>
+                @if (posVoucherDiscount() > 0) {
+                  <div class="summary-row text-success">
+                    <span>Giảm giá voucher</span>
+                    <span>-{{ posVoucherDiscount() | currency:'VND':'symbol':'1.0-0':'vi' }}</span>
+                  </div>
+                }
+                @if (posDelivery() && posFreight() > 0) {
+                  <div class="summary-row">
+                    <span>Phí vận chuyển</span>
+                    <span>+{{ posFreight() | currency:'VND':'symbol':'1.0-0':'vi' }}</span>
+                  </div>
+                }
+                <div class="summary-row grand-total">
+                  <strong>TỔNG THANH TOÁN</strong>
+                  <strong class="total-amount">
+                    {{ (cart.subtotal - posVoucherDiscount() + (posDelivery() ? posFreight() : 0)) | currency:'VND':'symbol':'1.0-0':'vi' }}
+                  </strong>
+                </div>
+              </div>
+
+              <!-- PAY & PRINT BUTTON -->
+              <button type="button" class="btn btn-success btn-lg btn-block" [disabled]="!cart.items.length || busy()" (click)="finishPosOrder(cart)">
+                Thanh toán & In hóa đơn PDF ↗
+              </button>
+            </div>
+          } @else {
+            <div class="card empty-pos-pane">
+              <p>Chọn hoặc mở hóa đơn để thanh toán.</p>
+              <button type="button" class="btn btn-primary" (click)="newPosCart()">Mở hóa đơn 1</button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- 3. ORDERS & RETURNS/EXCHANGES (HÌNH 3.5 & 3.6) -->
+    @if (tab() === 'orders') {
+      <div class="view-header">
+        <div>
+          <h2>Quản lý Đơn hàng & Đổi/Trả hàng</h2>
+          <p class="view-sub">Xem tiến trình đơn hàng trực tuyến và tại quầy, cập nhật trạng thái và in hóa đơn</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline" (click)="loadOrders()">↻ Làm mới</button>
+        </div>
+      </div>
+
+      <!-- STATUS TABS FILTER -->
+      <div class="order-status-tabs">
+        <button type="button" [class.active]="orderFilterStatus() === 'ALL'" (click)="setOrderFilterStatus('ALL')">Tất cả</button>
+        <button type="button" [class.active]="orderFilterStatus() === 'PENDING'" (click)="setOrderFilterStatus('PENDING')">Chờ duyệt</button>
+        <button type="button" [class.active]="orderFilterStatus() === 'PREPARING'" (click)="setOrderFilterStatus('PREPARING')">Chuẩn bị hàng</button>
+        <button type="button" [class.active]="orderFilterStatus() === 'SHIPPING'" (click)="setOrderFilterStatus('SHIPPING')">Đang giao</button>
+        <button type="button" [class.active]="orderFilterStatus() === 'COMPLETED'" (click)="setOrderFilterStatus('COMPLETED')">Thành công</button>
+        <button type="button" [class.active]="orderFilterStatus() === 'CANCELLED'" (click)="setOrderFilterStatus('CANCELLED')">Đã hủy</button>
+      </div>
+
+      <!-- ORDERS TABLE -->
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mã hóa đơn</th>
+              <th>Ngày tạo</th>
+              <th>Khách hàng</th>
+              <th>Kênh</th>
+              <th>Tổng tiền</th>
+              <th>Trạng thái</th>
+              <th class="text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (o of orders(); track o.id) {
+              <tr>
+                <td><strong>{{ o.code }}</strong></td>
+                <td>{{ o.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  <strong>{{ o.customerName || 'Khách tại quầy' }}</strong>
+                  <small class="block text-muted">{{ o.customerPhone }}</small>
+                </td>
+                <td>
+                  <span class="badge" [class.badge-pos]="o.channel === 'POS'">{{ o.channel === 'POS' ? 'Tại quầy' : 'Online' }}</span>
+                </td>
+                <td class="font-bold">{{ o.total | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                <td>
+                  <select class="status-select" [value]="o.status" (change)="updateOrderStatus(o.id, $any($event.target).value)">
+                    @for (s of availableOrderStatuses(o.status); track s[0]) {
+                      <option [value]="s[0]">{{ s[1] }}</option>
+                    }
+                  </select>
+                </td>
+                <td class="text-right">
+                  <div class="table-actions">
+                    <button type="button" class="btn btn-outline btn-sm" (click)="viewOrderDetail(o)">Chi tiết</button>
+                    <button type="button" class="btn btn-outline btn-sm" (click)="printInvoice(o.id, o.code)">In PDF</button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="text-center py-4">Không tìm thấy đơn hàng phù hợp.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RETURNS & EXCHANGES SECTION -->
+      <div class="card mt-6">
+        <div class="card-header">
+          <h3>Yêu cầu Trả hàng & Đổi hàng (Return / Exchange)</h3>
+          <div class="header-actions">
+            <button type="button" class="btn btn-primary btn-sm" (click)="openCreateExchangeModal()">+ Tạo phiếu đổi hàng</button>
+          </div>
+        </div>
+        <div class="tabs-bar">
+          <button type="button" [class.active]="returnsSubTab() === 'returns'" (click)="returnsSubTab.set('returns')">Yêu cầu trả hàng ({{ returnsList().length }})</button>
+          <button type="button" [class.active]="returnsSubTab() === 'exchanges'" (click)="returnsSubTab.set('exchanges')">Phiếu đổi hàng ({{ exchangesList().length }})</button>
+        </div>
+
+        @if (returnsSubTab() === 'returns') {
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã đơn</th>
+                <th>Lý do trả</th>
+                <th>Ngày tạo</th>
+                <th>Trạng thái</th>
+                <th class="text-right">Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of returnsList(); track r.id) {
+                <tr>
+                  <td><strong>{{ r.orderCode }}</strong></td>
+                  <td>{{ r.reason }}</td>
+                  <td>{{ r.createdAt | date:'dd/MM/yyyy' }}</td>
+                  <td><span class="badge">{{ statusLabel(r.status) }}</span></td>
+                  <td class="text-right">
+                    <div class="table-actions">
+                      @if (r.status === 'PENDING') {
+                        <button type="button" class="btn btn-success btn-sm" (click)="updateReturnStatus(r, 'APPROVED')">Duyệt</button>
+                        <button type="button" class="btn btn-danger btn-sm" (click)="updateReturnStatus(r, 'REJECTED')">Từ chối</button>
+                      } @else if (r.status === 'APPROVED') {
+                        <button type="button" class="btn btn-primary btn-sm" (click)="openCreateExchangeModal(r)">Đổi hàng</button>
+                        <button type="button" class="btn btn-outline btn-sm" (click)="updateReturnStatus(r, 'RECEIVED')">Đã nhận hàng</button>
+                      } @else if (r.status === 'RECEIVED') {
+                        <span class="badge badge-success">Đã nhập kho</span>
+                      } @else if (r.status === 'REJECTED') {
+                        <span class="badge badge-danger">Đã từ chối</span>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="text-center py-4">Chưa có yêu cầu trả hàng nào.</td></tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã đổi</th>
+                <th>Người nhận</th>
+                <th>Địa chỉ giao đổi</th>
+                <th>Tổng chênh lệch</th>
+                <th>Trạng thái</th>
+                <th class="text-right">Cập nhật</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ex of exchangesList(); track ex.id) {
+                <tr>
+                  <td><strong>#EX-{{ ex.id }}</strong></td>
+                  <td>{{ ex.shipName || 'Khách' }} ({{ ex.shipPhone }})</td>
+                  <td>{{ ex.shipAddress || 'Tại cửa hàng' }}</td>
+                  <td class="font-bold">{{ ex.total | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                  <td><span class="badge">{{ ex.status }}</span></td>
+                  <td class="text-right">
+                    @if (ex.status !== 'COMPLETED') {
+                      <button type="button" class="btn btn-outline btn-sm" (click)="updateExchangeStatus(ex, 'COMPLETED')">Hoàn tất</button>
+                    } @else {
+                      <span class="badge badge-success">Đã hoàn tất</span>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="text-center py-4">Chưa có phiếu đổi hàng nào.</td></tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+
+    <!-- 4. PRODUCTS & VARIANTS (HÌNH 3.1 & 3.2) -->
+    @if (tab() === 'products') {
+      <div class="view-header">
+        <div>
+          <h2>Quản lý Sản phẩm & Biến thể (ProductDetail)</h2>
+          <p class="view-sub">Mở rộng từng dòng để xem chi tiết barcode, màu sắc, size, giá và số lượng tồn kho</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline" (click)="exportProductsCsv()">Xuất CSV sản phẩm</button>
+          <button type="button" class="btn btn-primary" (click)="openAddProductModal()">+ Thêm sản phẩm mới</button>
+        </div>
+      </div>
+
+      <!-- PRODUCTS TABLE WITH EXPANDABLE ROWS -->
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th width="40"></th>
+              <th>Mã SP</th>
+              <th>Tên sản phẩm</th>
+              <th>Danh mục</th>
+              <th>Giá niêm yết</th>
+              <th>Biến thể / Tồn kho</th>
+              <th>Tải ảnh local</th>
+              <th class="text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of products(); track p.id) {
+              <tr [class.expanded-parent]="expandedProductId() === p.id">
+                <td>
+                  <button type="button" class="expand-btn" (click)="toggleVariants(p)" title="Mở rộng danh sách biến thể">
+                    {{ expandedProductId() === p.id ? '▼' : '▶' }}
+                  </button>
+                </td>
+                <td><span class="code-tag">{{ p.code }}</span></td>
+                <td><strong>{{ p.name }}</strong></td>
+                <td>{{ p.categoryName || 'Áo nam' }}</td>
+                <td class="font-bold">{{ p.price | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                <td>
+                  <span class="badge badge-info">{{ p.variants.length }} biến thể</span>
+                  <strong class="ml-2">{{ stockCount(p) }} chiếc</strong>
+                </td>
+                <td>
+                  <label class="btn-file-upload">
+                    <span>📷 Chọn ảnh</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadImage(p, $event)">
+                  </label>
+                </td>
+                <td class="text-right">
+                  <div class="table-actions">
+                    <button type="button" class="btn btn-outline btn-sm" (click)="editProduct(p)">Sửa</button>
+                    <button type="button" class="btn btn-outline btn-sm" (click)="toggleVariants(p)">Biến thể</button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- EXPANDED ROW: VARIANTS TABLE (PRODUCTDETAIL) -->
+              @if (expandedProductId() === p.id) {
+                <tr class="expanded-row">
+                  <td colspan="8">
+                    <div class="expanded-variants-panel">
+                      <div class="variants-table-header">
+                        <h4>Danh sách biến thể màu & size của {{ p.name }}</h4>
+                        <span class="text-muted">Barcode tự động sinh, hỗ trợ máy quét và POS</span>
+                      </div>
+                      <table class="sub-table">
+                        <thead>
+                          <tr>
+                            <th>Mã SKU</th>
+                            <th>Mã Barcode</th>
+                            <th>Màu sắc</th>
+                            <th>Kích cỡ</th>
+                            <th>Giá vốn</th>
+                            <th>Giá bán lẻ</th>
+                            <th>Tồn kho</th>
+                            <th class="text-right">Lưu / Xóa</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (v of p.variants; track v.id) {
+                            <tr>
+                              <td><span class="code-tag">{{ v.sku }}</span></td>
+                              <td><span class="barcode-tag">||| {{ v.barcode || '—' }}</span></td>
+                              <td><span class="color-dot-label">{{ v.color }}</span></td>
+                              <td><span class="size-badge">{{ v.size }}</span></td>
+                              <td>{{ (v.costPrice || 0) | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                              <td>
+                                <input type="number" class="inline-input" [(ngModel)]="v.price" [ngModelOptions]="{standalone:true}">
+                              </td>
+                              <td>
+                                <input type="number" class="inline-input stock-input" [(ngModel)]="v.stock" [ngModelOptions]="{standalone:true}">
+                              </td>
+                              <td class="text-right">
+                                <div class="table-actions">
+                                  <button type="button" class="btn btn-success btn-xs" (click)="saveVariantDetails(v)">Lưu</button>
+                                  <button type="button" class="btn btn-danger btn-xs" (click)="removeVariant(v)">Xóa</button>
+                                </div>
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+              }
+            } @empty {
+              <tr><td colspan="8" class="text-center py-4">Chưa có sản phẩm nào.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- 5. ATTRIBUTES MANAGEMENT (9 THUỘC TÍNH SẢN PHẨM) -->
+    @if (tab() === 'attributes') {
+      <div class="view-header">
+        <div>
+          <h2>Quản lý Thuộc tính sản phẩm (9 bảng Từ điển dữ liệu)</h2>
+          <p class="view-sub">Chuẩn hóa danh mục, màu sắc, kích cỡ, chất liệu, cổ áo, form dáng, thiết kế, tay áo</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-primary" (click)="openAddAttributeModal()">+ Thêm thuộc tính</button>
+        </div>
+      </div>
+
+      <!-- 9 ATTRIBUTE TABS -->
+      <div class="attribute-tabs-bar">
+        @for (cat of attributeCategories; track cat.key) {
+          <button type="button" [class.active]="currentAttributeType() === cat.key" (click)="loadAttributes(cat.key)">
+            {{ cat.label }}
+          </button>
+        }
+      </div>
+
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên thuộc tính</th>
+              <th>Mã / Hex / Slug</th>
+              <th>Mô tả / Thể loại cha</th>
+              <th>Trạng thái</th>
+              <th class="text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of attributeList(); track item.id) {
+              <tr>
+                <td>#{{ item.id }}</td>
+                <td><strong>{{ item.name }}</strong></td>
+                <td><span class="code-tag">{{ item.code || '—' }}</span></td>
+                <td>{{ item.extra || '—' }}</td>
+                <td>
+                  <span class="badge" [class.badge-success]="item.status">{{ item.status ? 'Hoạt động' : 'Tạm ẩn' }}</span>
+                </td>
+                <td class="text-right">
+                  <div class="table-actions">
+                    <button type="button" class="btn btn-outline btn-sm" (click)="editAttribute(item)">Sửa</button>
+                    <button type="button" class="btn btn-danger btn-sm" (click)="deleteAttribute(item)">Xóa</button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="text-center py-4">Chưa có mục nào trong danh mục này.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- 6. FAULT PRODUCTS (SẢN PHẨM HỦY/LỖI TỒN KHO - BẢNG 2.26) -->
+    @if (tab() === 'fault-products') {
+      <div class="view-header">
+        <div>
+          <h2>Quản lý Sản phẩm hủy & Lỗi kho (FaultProduct - Bảng 2.26)</h2>
+          <p class="view-sub">Ghi nhận sản phẩm rách, lỗi chỉ, ố mốc; tự động khấu trừ tồn kho an toàn</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-danger" (click)="openFaultProductModal()">+ Ghi nhận hủy/lỗi tồn</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên sản phẩm</th>
+              <th>Mã SKU</th>
+              <th>Màu sắc & Size</th>
+              <th>Số lượng hủy</th>
+              <th>Lý do hủy</th>
+              <th>Thời gian ghi nhận</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of faultProducts(); track f.id) {
+              <tr>
+                <td>#{{ f.id }}</td>
+                <td><strong>{{ f.productName }}</strong></td>
+                <td><span class="code-tag">{{ f.sku }}</span></td>
+                <td>{{ f.color }} · {{ f.size }}</td>
+                <td><span class="badge badge-danger">-{{ f.quantity }} chiếc</span></td>
+                <td>{{ f.description }}</td>
+                <td>{{ f.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="text-center py-4">Không có bản ghi hủy hàng nào.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- 7. PROMOTIONS & VOUCHERS (BẢNG 2.33, 2.34, 2.36) -->
+    @if (tab() === 'promotions') {
+      <div class="view-header">
+        <div>
+          <h2>Khuyến mãi & Phiếu giảm giá Voucher</h2>
+          <p class="view-sub">Tạo đợt giảm giá (Discount) và mã coupon ưu đãi đơn hàng (Voucher)</p>
+        </div>
+        <div class="header-actions">
+          @if (promoTab() === 'discounts') {
+            <button type="button" class="btn btn-primary" (click)="discountModalOpen.set(true)">+ Tạo đợt khuyến mãi</button>
+          } @else {
+            <button type="button" class="btn btn-primary" (click)="voucherModalOpen.set(true)">+ Tạo mã Voucher mới</button>
+          }
+        </div>
+      </div>
+
+      <div class="tabs-bar">
+        <button type="button" [class.active]="promoTab() === 'discounts'" (click)="promoTab.set('discounts')">Đợt khuyến mãi (Discount)</button>
+        <button type="button" [class.active]="promoTab() === 'vouchers'" (click)="promoTab.set('vouchers')">Phiếu giảm giá (Voucher)</button>
+      </div>
+
+      @if (promoTab() === 'discounts') {
+        <div class="card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tên chương trình</th>
+                <th>Mô tả</th>
+                <th>Thời gian áp dụng</th>
+                <th>Số SP áp dụng</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of discounts(); track d.id) {
+                <tr>
+                  <td><strong>{{ d.name }}</strong></td>
+                  <td>{{ d.description || '—' }}</td>
+                  <td>{{ d.startDate | date:'dd/MM/yy' }} — {{ d.endDate | date:'dd/MM/yy' }}</td>
+                  <td><span class="badge">{{ d.productCount }} sản phẩm</span></td>
+                  <td><span class="badge badge-success">{{ d.status ? 'Đang chạy' : 'Đã kết thúc' }}</span></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="text-center py-4">Chưa có đợt khuyến mãi.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã Voucher</th>
+                <th>Tên ưu đãi</th>
+                <th>Mức giảm</th>
+                <th>Đơn tối thiểu</th>
+                <th>Giảm tối đa</th>
+                <th>Hạn dùng</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of vouchers(); track v.id) {
+                <tr>
+                  <td><span class="code-tag font-bold">{{ v.code }}</span></td>
+                  <td><strong>{{ v.name }}</strong></td>
+                  <td><span class="badge badge-info">{{ v.discount }}%</span></td>
+                  <td>{{ (v.min || 0) | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                  <td>{{ (v.max || 0) | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                  <td>{{ v.startDate | date:'dd/MM/yy' }} — {{ v.endDate | date:'dd/MM/yy' }}</td>
+                  <td><span class="badge badge-success">{{ v.status ? 'Kích hoạt' : 'Hết hạn' }}</span></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="text-center py-4">Chưa có mã voucher.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+
+    <!-- 8. CUSTOMERS & ADDRESS BOOK (BẢNG 2.13, 2.14) -->
+    @if (tab() === 'customers') {
+      <div class="view-header">
+        <div>
+          <h2>Quản lý Khách hàng & Sổ địa chỉ (Customer & Address)</h2>
+          <p class="view-sub">Xem lịch sử mua sắm, điểm tích lũy và danh sách địa chỉ giao hàng</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-outline" (click)="exportCustomersCsv()">Xuất CSV khách hàng</button>
+          <button type="button" class="btn btn-primary" (click)="loadCustomers()">↻ Làm mới</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Họ và tên</th>
+              <th>Số điện thoại</th>
+              <th>Email</th>
+              <th>Điểm thưởng</th>
+              <th>Số đơn</th>
+              <th>Tổng chi tiêu</th>
+              <th class="text-right">Sổ địa chỉ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of customers(); track c.id) {
+              <tr>
+                <td>#{{ c.id }}</td>
+                <td><strong>{{ c.fullName }}</strong></td>
+                <td>{{ c.phone || '—' }}</td>
+                <td>{{ c.email || '—' }}</td>
+                <td><span class="badge badge-info">{{ c.points || 0 }} pts</span></td>
+                <td>{{ c.ordersCount || 0 }} đơn</td>
+                <td class="font-bold">{{ (c.totalSpent || 0) | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                <td class="text-right">
+                  <button type="button" class="btn btn-outline btn-sm" (click)="viewCustomerDetail(c)">Sổ địa chỉ</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="text-center py-4">Chưa có tài khoản khách hàng nào.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- 9. STAFF & ROLES (BẢNG 2.12, 2.31) -->
+    @if (tab() === 'staff') {
+      <div class="view-header">
+        <div>
+          <h2>Quản lý Nhân viên & Vai trò (Employee & Role)</h2>
+          <p class="view-sub">Phân quyền nhân viên bán hàng tại quầy (STAFF) và Quản trị viên (ADMIN)</p>
+        </div>
+        <div class="header-actions">
+          @if (staffTab() === 'staff') {
+            <button type="button" class="btn btn-primary" (click)="staffModalOpen.set(true)">+ Thêm nhân viên</button>
+          } @else {
+            <button type="button" class="btn btn-primary" (click)="roleModalOpen.set(true)">+ Thêm vai trò mới</button>
+          }
+        </div>
+      </div>
+
+      <div class="tabs-bar">
+        <button type="button" [class.active]="staffTab() === 'staff'" (click)="staffTab.set('staff')">Danh sách nhân viên ({{ staff().length }})</button>
+        <button type="button" [class.active]="staffTab() === 'roles'" (click)="staffTab.set('roles')">Bảng phân quyền Role ({{ roles().length }})</button>
+      </div>
+
+      @if (staffTab() === 'staff') {
+        <div class="card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>Số điện thoại</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th class="text-right">Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of staff(); track m.id) {
+                <tr>
+                  <td><strong>{{ m.fullName }}</strong></td>
+                  <td>{{ m.email }}</td>
+                  <td>{{ m.phone || '—' }}</td>
+                  <td><span class="badge badge-info">{{ m.role }}</span></td>
+                  <td><span class="badge" [class.badge-success]="m.active !== false">{{ m.active === false ? 'Tạm khóa' : 'Hoạt động' }}</span></td>
+                  <td class="text-right">
+                    <button type="button" class="btn btn-outline btn-sm" (click)="toggleStaff(m)">
+                      {{ m.active === false ? 'Mở khóa' : 'Khóa tài khoản' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Mã vai trò</th>
+                <th>Mô tả chức năng</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of roles(); track r.id) {
+                <tr>
+                  <td>#{{ r.id }}</td>
+                  <td><span class="code-tag font-bold">{{ r.name }}</span></td>
+                  <td>{{ r.description || '—' }}</td>
+                  <td><span class="badge badge-success">Kích hoạt</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+
+    <!-- 10. BANNERS (BẢNG 2.25) -->
+    @if (tab() === 'banners') {
+      <div class="view-header">
+        <div>
+          <h2>Banner quảng cáo & Tiếp thị (Banner - Bảng 2.25)</h2>
+          <p class="view-sub">Quản lý banner hiển thị trên trang chủ cửa hàng trực tuyến</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-primary" (click)="bannerModalOpen.set(true)">+ Thêm banner</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Hình ảnh</th>
+              <th>Tiêu đề</th>
+              <th>Nội dung</th>
+              <th>Đường dẫn liên kết</th>
+              <th>Thứ tự</th>
+              <th>Trạng thái</th>
+              <th class="text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (b of banners(); track b.id) {
+              <tr>
+                <td>
+                  <img [src]="b.url" alt="Banner" class="banner-thumb" onerror="this.src='/favicon.ico'">
+                </td>
+                <td><strong>{{ b.title || 'Banner NewMen' }}</strong></td>
+                <td>{{ b.content || '—' }}</td>
+                <td><small>{{ b.linkUrl || '/catalog' }}</small></td>
+                <td>{{ b.sortOrder }}</td>
+                <td>
+                  <span class="badge" [class.badge-success]="b.status">{{ b.status ? 'Hiển thị' : 'Ẩn' }}</span>
+                </td>
+                <td class="text-right">
+                  <div class="table-actions">
+                    <button type="button" class="btn btn-outline btn-sm" (click)="toggleBannerStatus(b)">
+                      {{ b.status ? 'Ẩn' : 'Bật' }}
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" (click)="deleteBanner(b)">Xóa</button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="text-center py-4">Chưa có banner quảng cáo.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- 11. FEEDBACK: LIÊN HỆ & ĐÁNH GIÁ (BẢNG 2.28, 2.32) -->
+    @if (tab() === 'feedback') {
+      <div class="view-header">
+        <div>
+          <h2>Liên hệ tư vấn & Kiểm duyệt đánh giá (Contact & Rating)</h2>
+          <p class="view-sub">Xem phản hồi từ form liên hệ khách hàng và kiểm duyệt đánh giá sao cho sản phẩm</p>
+        </div>
+      </div>
+
+      <div class="tabs-bar">
+        <button type="button" [class.active]="feedbackTab() === 'contacts'" (click)="feedbackTab.set('contacts')">Liên hệ khách hàng ({{ contacts().length }})</button>
+        <button type="button" [class.active]="feedbackTab() === 'reviews'" (click)="feedbackTab.set('reviews')">Đánh giá sản phẩm ({{ reviews().length }})</button>
+      </div>
+
+      @if (feedbackTab() === 'contacts') {
+        <div class="card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>SĐT / Email</th>
+                <th>Địa chỉ</th>
+                <th>Nội dung tin nhắn</th>
+                <th>Ngày gửi</th>
+                <th>Trạng thái</th>
+                <th class="text-right">Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of contacts(); track c.id) {
+                <tr>
+                  <td><strong>{{ c.name }}</strong></td>
+                  <td>{{ c.phone }}<br><small>{{ c.email }}</small></td>
+                  <td>{{ c.addressName || '—' }}</td>
+                  <td>{{ c.content }}</td>
+                  <td>{{ c.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td>
+                    <span class="badge" [class.badge-success]="c.status">{{ c.status ? 'Đã phản hồi' : 'Chưa xử lý' }}</span>
+                  </td>
+                  <td class="text-right">
+                    <button type="button" class="btn btn-outline btn-sm" (click)="toggleContactStatus(c)">
+                      {{ c.status ? 'Đánh dấu chưa xử lý' : 'Đánh dấu đã gọi' }}
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="text-center py-4">Không có tin nhắn liên hệ.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th>Người đánh giá</th>
+                <th>Số sao</th>
+                <th>Nội dung nhận xét</th>
+                <th>Thời gian</th>
+                <th>Trạng thái</th>
+                <th class="text-right">Kiểm duyệt</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of reviews(); track r.id) {
+                <tr>
+                  <td><strong>{{ r.productName }}</strong></td>
+                  <td>{{ r.author }}</td>
+                  <td><span class="star-rating">★ {{ r.rating }}/5</span></td>
+                  <td>{{ r.content }}</td>
+                  <td>{{ r.createdAt | date:'dd/MM/yyyy' }}</td>
+                  <td>
+                    <span class="badge" [class.badge-success]="r.status">{{ r.status ? 'Hiển thị' : 'Đã ẩn' }}</span>
+                  </td>
+                  <td class="text-right">
+                    <button type="button" class="btn btn-outline btn-sm" (click)="toggleReviewStatus(r)">
+                      {{ r.status ? 'Ẩn đánh giá' : 'Hiển thị' }}
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="text-center py-4">Chưa có đánh giá nào.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </main>
+  }
+</div>
+
+<!-- ============================================================== -->
+<!-- MODALS -->
+<!-- ============================================================== -->
+
+<!-- 1. ADD / EDIT PRODUCT MODAL (HÌNH 3.2) -->
+@if (productModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-header">
+        <h3>{{ editingProduct() ? 'Cập nhật sản phẩm' : 'Thêm sản phẩm mới & Sinh ma trận biến thể' }}</h3>
+        <button type="button" class="close-btn" (click)="productModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="productForm">
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label>Tên sản phẩm *</label>
+            <input formControlName="name" placeholder="VD: Áo sơ mi Oxford slimfit cao cấp">
+          </div>
+          <div class="form-group">
+            <label>Mã sản phẩm *</label>
+            <input formControlName="code" placeholder="VD: NM-SM-001">
+          </div>
+          <div class="form-group">
+            <label>Danh mục sản phẩm *</label>
+            <select formControlName="categoryId">
+              @for (cat of catalogAttributes().categories; track cat.id) {
+                <option [value]="cat.id">{{ cat.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label>Giá bán niêm yết (₫) *</label>
+            <input type="number" formControlName="price" (input)="generateVariantMatrix()">
+          </div>
+          <div class="form-group">
+            <label>Giá vốn ước tính (₫)</label>
+            <input type="number" formControlName="costPrice" (input)="generateVariantMatrix()">
+          </div>
+          <div class="form-group">
+            <label>Tồn kho mặc định mỗi size</label>
+            <input type="number" formControlName="defaultStock" (input)="generateVariantMatrix()">
+          </div>
+        </div>
+
+        <!-- 5 THUỘC TÍNH CHI TIẾT ÁO NAM CÓ NÚT THÊM NHANH -->
+        <div class="form-grid-5">
+          <div class="form-group">
+            <div class="attribute-label-bar">
+              <label>Cổ áo</label>
+              <button type="button" class="btn-mini-add" title="Thêm cổ áo mới" (click)="openFastAttributeModal('collars')">+</button>
+            </div>
+            <select formControlName="collar">
+              @for (c of catalogAttributes().collars; track c.id) {
+                <option [value]="c.name">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="attribute-label-bar">
+              <label>Thiết kế</label>
+              <button type="button" class="btn-mini-add" title="Thêm thiết kế mới" (click)="openFastAttributeModal('designs')">+</button>
+            </div>
+            <select formControlName="design">
+              @for (d of catalogAttributes().designs; track d.id) {
+                <option [value]="d.name">{{ d.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="attribute-label-bar">
+              <label>Kiểu dáng / Form</label>
+              <button type="button" class="btn-mini-add" title="Thêm kiểu dáng mới" (click)="openFastAttributeModal('forms')">+</button>
+            </div>
+            <select formControlName="form">
+              @for (f of catalogAttributes().forms; track f.id) {
+                <option [value]="f.name">{{ f.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="attribute-label-bar">
+              <label>Chất liệu</label>
+              <button type="button" class="btn-mini-add" title="Thêm chất liệu mới" (click)="openFastAttributeModal('materials')">+</button>
+            </div>
+            <select formControlName="material">
+              @for (m of catalogAttributes().materials; track m.id) {
+                <option [value]="m.name">{{ m.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="attribute-label-bar">
+              <label>Tay áo</label>
+              <button type="button" class="btn-mini-add" title="Thêm tay áo mới" (click)="openFastAttributeModal('sleeves')">+</button>
+            </div>
+            <select formControlName="sleeve">
+              @for (s of catalogAttributes().sleeves; track s.id) {
+                <option [value]="s.name">{{ s.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Mô tả chi tiết sản phẩm</label>
+          <textarea formControlName="description" rows="2" placeholder="Chất vải mềm mịn, co giãn nhẹ, giữ form tốt sau nhiều lần giặt..."></textarea>
+        </div>
+
+        @if (!editingProduct()) {
+          <!-- MULTI-COLOR & MULTI-SIZE PICKER TO AUTO-GENERATE MATRIX -->
+          <div class="matrix-generator-section">
+            <div class="matrix-col">
+              <div class="matrix-col-header">
+                <span class="matrix-heading">1. Chọn các màu sắc áp dụng:</span>
+                <button type="button" class="btn-attribute-add" (click)="openFastAttributeModal('colors')">
+                  <span class="plus-icon">+</span> Thêm màu mới
+                </button>
+              </div>
+              <div class="chips-selector">
+                @for (c of catalogAttributes().colors; track c.id) {
+                  <button type="button" class="chip-btn" [class.selected]="selectedColors().includes(c.name)" (click)="toggleColor(c.name)">
+                    {{ c.name }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="matrix-col">
+              <div class="matrix-col-header">
+                <span class="matrix-heading">2. Chọn các kích cỡ (Size):</span>
+                <button type="button" class="btn-attribute-add" (click)="openFastAttributeModal('sizes')">
+                  <span class="plus-icon">+</span> Thêm size mới
+                </button>
+              </div>
+              <div class="chips-selector">
+                @for (s of catalogAttributes().sizes; track s.id) {
+                  <button type="button" class="chip-btn" [class.selected]="selectedSizes().includes(s.name)" (click)="toggleSize(s.name)">
+                    {{ s.name }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- GENERATED VARIANTS PREVIEW -->
+          <div class="generated-preview">
+            <div class="preview-header">
+              <strong>Danh sách {{ generatedVariants().length }} biến thể sẽ được tạo tự động:</strong>
+              <button type="button" class="btn btn-outline btn-xs" (click)="generateVariantMatrix()">↻ Tính toán lại</button>
+            </div>
+            <div class="preview-table-scroll">
+              <table class="sub-table">
+                <thead>
+                  <tr>
+                    <th>Mã SKU</th>
+                    <th>Mã Barcode</th>
+                    <th>Màu - Size</th>
+                    <th>Giá vốn</th>
+                    <th>Giá bán</th>
+                    <th>Tồn kho</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (v of generatedVariants(); track v.sku) {
+                    <tr>
+                      <td><span class="code-tag">{{ v.sku }}</span></td>
+                      <td><span class="barcode-tag">||| {{ v.barcode }}</span></td>
+                      <td><strong>{{ v.color }}</strong> - {{ v.size }}</td>
+                      <td>{{ v.costPrice | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                      <td>{{ v.price | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                      <td>{{ v.stock }} chiếc</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="productModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveProduct()" [disabled]="busy()">
+          {{ editingProduct() ? 'Lưu thay đổi' : 'Lưu sản phẩm & ' + generatedVariants().length + ' biến thể' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 2. FAST ATTRIBUTE ADD MODAL -->
+@if (fastAttributeModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h3>Thêm nhanh thuộc tính</h3>
+        <button type="button" class="close-btn" (click)="fastAttributeModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="fastAttributeForm">
+        <div class="form-group">
+          <label>Tên giá trị thuộc tính *</label>
+          <input formControlName="name" placeholder="VD: Xanh Navy, Cotton Lạnh, Cổ V...">
+        </div>
+        <div class="form-group">
+          <label>Mã / Hex / Viết tắt</label>
+          <input formControlName="code" placeholder="VD: #1B263B hoặc XL">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="fastAttributeModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveFastAttribute()">Lưu</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 3. ORDER DETAIL MODAL (TIMELINE & STATUS STEPPER - HÌNH 3.6) -->
+@if (orderDetailModalOpen(); as detail) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>Chi tiết hóa đơn {{ selectedOrderDetail()?.code }}</h3>
+          <span class="text-muted">Kênh: {{ selectedOrderDetail()?.channel === 'POS' ? 'Tại quầy' : 'Trực tuyến Online' }} · Ngày đặt: {{ selectedOrderDetail()?.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <button type="button" class="close-btn" (click)="orderDetailModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- STATUS TIMELINE STEPPER -->
+        <div class="status-stepper">
+          <div class="step" [class.done]="true">
+            <div class="step-circle">1</div>
+            <span>Đặt hàng</span>
+          </div>
+          <div class="step-line" [class.done]="selectedOrderDetail()?.status !== 'PENDING'"></div>
+          <div class="step" [class.done]="['CONFIRMED','PREPARING','READY_TO_SHIP','SHIPPING','COMPLETED'].includes(selectedOrderDetail()?.status || '')">
+            <div class="step-circle">2</div>
+            <span>Duyệt đơn</span>
+          </div>
+          <div class="step-line" [class.done]="['READY_TO_SHIP','SHIPPING','COMPLETED'].includes(selectedOrderDetail()?.status || '')"></div>
+          <div class="step" [class.done]="['SHIPPING','COMPLETED'].includes(selectedOrderDetail()?.status || '')">
+            <div class="step-circle">3</div>
+            <span>Giao hàng</span>
+          </div>
+          <div class="step-line" [class.done]="selectedOrderDetail()?.status === 'COMPLETED'"></div>
+          <div class="step" [class.done]="selectedOrderDetail()?.status === 'COMPLETED'">
+            <div class="step-circle">4</div>
+            <span>Hoàn tất</span>
+          </div>
+        </div>
+
+        <!-- CUSTOMER & SHIPPING INFO -->
+        <div class="order-info-grid">
+          <div class="info-block">
+            <h4>Thông tin khách hàng</h4>
+            <p><strong>{{ selectedOrderDetail()?.customerName || 'Khách lẻ' }}</strong></p>
+            <p>Số điện thoại: {{ selectedOrderDetail()?.customerPhone || '—' }}</p>
+            <p>Email: {{ selectedOrderDetail()?.customerEmail || '—' }}</p>
+          </div>
+          <div class="info-block">
+            <h4>Địa chỉ giao hàng</h4>
+            <p>{{ selectedOrderDetail()?.shippingAddress?.line1 || 'Nhận tại quầy NewMen Store' }}</p>
+            <p>{{ selectedOrderDetail()?.shippingAddress?.ward }}, {{ selectedOrderDetail()?.shippingAddress?.district }}, {{ selectedOrderDetail()?.shippingAddress?.province }}</p>
+          </div>
+        </div>
+
+        <!-- ORDER ITEMS -->
+        <h4 class="mt-4">Danh sách sản phẩm mua</h4>
+        <table class="sub-table">
+          <thead>
+            <tr>
+              <th>Sản phẩm</th>
+              <th>Màu - Size</th>
+              <th>Đơn giá</th>
+              <th>Số lượng</th>
+              <th class="text-right">Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of selectedOrderDetail()?.items; track item.variantId) {
+              <tr>
+                <td><strong>{{ item.productName }}</strong></td>
+                <td>{{ item.color }} - {{ item.size }}</td>
+                <td>{{ item.unitPrice | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+                <td>{{ item.quantity }}</td>
+                <td class="text-right font-bold">{{ (item.unitPrice * item.quantity) | currency:'VND':'symbol':'1.0-0':'vi' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <!-- TOTALS -->
+        <div class="order-totals">
+          <div><span>Tạm tính:</span> <strong>{{ selectedOrderDetail()?.subtotal | currency:'VND':'symbol':'1.0-0':'vi' }}</strong></div>
+          @if (selectedOrderDetail()?.discount) {
+            <div class="text-success"><span>Giảm giá voucher:</span> <strong>-{{ selectedOrderDetail()?.discount | currency:'VND':'symbol':'1.0-0':'vi' }}</strong></div>
+          }
+          @if (selectedOrderDetail()?.freight) {
+            <div><span>Phí vận chuyển:</span> <strong>+{{ selectedOrderDetail()?.freight | currency:'VND':'symbol':'1.0-0':'vi' }}</strong></div>
+          }
+          <div class="grand-total"><span>Tổng thanh toán:</span> <strong class="total-amount">{{ selectedOrderDetail()?.total | currency:'VND':'symbol':'1.0-0':'vi' }}</strong></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="orderDetailModalOpen.set(false)">Đóng</button>
+        <button type="button" class="btn btn-primary" (click)="printInvoice(selectedOrderDetail()!.id, selectedOrderDetail()!.code)">
+          In hóa đơn PDF
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 4. QUICK ADD CUSTOMER MODAL (FOR POS) -->
+@if (quickCustomerModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h3>Thêm nhanh khách hàng</h3>
+        <button type="button" class="close-btn" (click)="quickCustomerModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="quickCustomerForm">
+        <div class="form-group">
+          <label>Họ và tên *</label>
+          <input formControlName="fullName" placeholder="VD: Nguyễn Văn Nam">
+        </div>
+        <div class="form-group">
+          <label>Số điện thoại *</label>
+          <input formControlName="phone" placeholder="VD: 0988123456">
+        </div>
+        <div class="form-group">
+          <label>Địa chỉ</label>
+          <input formControlName="address" placeholder="VD: 123 Tây Hồ, Hà Nội">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="quickCustomerModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveQuickCustomer()">Lưu khách hàng</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 5. FAULT PRODUCT MODAL -->
+@if (faultProductModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <h3>Ghi nhận sản phẩm lỗi / hủy tồn kho</h3>
+        <button type="button" class="close-btn" (click)="faultProductModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="faultProductForm">
+        <div class="form-group">
+          <label>Chọn biến thể sản phẩm lỗi *</label>
+          <select formControlName="productDetailId">
+            <option [ngValue]="null">-- Chọn biến thể màu/size --</option>
+            @for (p of products(); track p.id) {
+              @for (v of p.variants; track v.id) {
+                <option [value]="v.id">{{ p.name }} - {{ v.color }} ({{ v.size }}) - SKU: {{ v.sku }} (Tồn: {{ v.stock }})</option>
+              }
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Số lượng hủy *</label>
+          <input type="number" formControlName="quantity" min="1">
+        </div>
+        <div class="form-group">
+          <label>Lý do hủy / lỗi *</label>
+          <textarea formControlName="description" rows="2" placeholder="VD: Lỗi bung chỉ đường may, dơ ố kho..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="faultProductModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-danger" (click)="saveFaultProduct()">Ghi nhận hủy & Trừ tồn</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 6. ATTRIBUTE ADD/EDIT MODAL -->
+@if (attributeModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h3>{{ editingAttribute() ? 'Sửa thuộc tính' : 'Thêm thuộc tính mới' }}</h3>
+        <button type="button" class="close-btn" (click)="attributeModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="attributeForm">
+        <div class="form-group">
+          <label>Tên thuộc tính *</label>
+          <input formControlName="name" placeholder="VD: Xanh Navy, Cotton, Tay dài...">
+        </div>
+        <div class="form-group">
+          <label>Mã / Hex / Viết tắt</label>
+          <input formControlName="code" placeholder="VD: #000080 hoặc XL">
+        </div>
+        <div class="form-group">
+          <label>Ghi chú / Thể loại cha</label>
+          <input formControlName="extra" placeholder="Mô tả bổ sung nếu có">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="attributeModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveAttribute()">Lưu</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 7. DISCOUNT MODAL -->
+@if (discountModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <h3>Tạo đợt khuyến mãi (Discount)</h3>
+        <button type="button" class="close-btn" (click)="discountModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="discountForm">
+        <div class="form-group">
+          <label>Tên đợt khuyến mãi *</label>
+          <input formControlName="name" placeholder="VD: Khuyến mãi Hè Rực Rỡ 2026">
+        </div>
+        <div class="form-group">
+          <label>Mức giảm giá (%) *</label>
+          <input type="number" formControlName="percent" min="1" max="100">
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Ngày bắt đầu *</label>
+            <input type="date" formControlName="startDate">
+          </div>
+          <div class="form-group">
+            <label>Ngày kết thúc *</label>
+            <input type="date" formControlName="endDate">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Mô tả chương trình</label>
+          <textarea formControlName="description" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="discountModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveDiscount()">Tạo khuyến mãi</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 8. VOUCHER MODAL -->
+@if (voucherModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <h3>Tạo mã phiếu giảm giá (Voucher)</h3>
+        <button type="button" class="close-btn" (click)="voucherModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="voucherForm">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Mã Voucher (viết hoa) *</label>
+            <input formControlName="code" placeholder="VD: NEWMEN20">
+          </div>
+          <div class="form-group">
+            <label>Tên ưu đãi *</label>
+            <input formControlName="name" placeholder="VD: Ưu đãi khách hàng mới">
+          </div>
+        </div>
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label>Mức giảm (%) *</label>
+            <input type="number" formControlName="discount" min="1" max="100">
+          </div>
+          <div class="form-group">
+            <label>Đơn tối thiểu (₫)</label>
+            <input type="number" formControlName="min" min="0">
+          </div>
+          <div class="form-group">
+            <label>Giảm tối đa (₫)</label>
+            <input type="number" formControlName="max" min="0">
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Ngày bắt đầu *</label>
+            <input type="date" formControlName="startDate">
+          </div>
+          <div class="form-group">
+            <label>Ngày hết hạn *</label>
+            <input type="date" formControlName="endDate">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="voucherModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveVoucher()">Tạo Voucher</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 9. STAFF MODAL -->
+@if (staffModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <h3>Thêm tài khoản nhân viên</h3>
+        <button type="button" class="close-btn" (click)="staffModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="staffForm">
+        <div class="form-group">
+          <label>Họ và tên nhân viên *</label>
+          <input formControlName="fullName" placeholder="VD: Trần Văn Bình">
+        </div>
+        <div class="form-group">
+          <label>Email đăng nhập *</label>
+          <input type="email" formControlName="email" placeholder="VD: binh.tv@newmen.local">
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu tạm *</label>
+          <input type="password" formControlName="password" placeholder="Tối thiểu 8 ký tự">
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Số điện thoại</label>
+            <input formControlName="phone">
+          </div>
+          <div class="form-group">
+            <label>Vai trò *</label>
+            <select formControlName="role">
+              <option value="STAFF">Nhân viên bán hàng (STAFF)</option>
+              <option value="ADMIN">Quản trị viên (ADMIN)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="staffModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveStaff()">Tạo tài khoản</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 10. BANNER MODAL -->
+@if (bannerModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <h3>Thêm banner quảng cáo</h3>
+        <button type="button" class="close-btn" (click)="bannerModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="bannerForm">
+        <div class="form-group">
+          <label>Tiêu đề banner</label>
+          <input formControlName="title" placeholder="VD: Bộ sưu tập Áo Sơ Mi Hè 2026">
+        </div>
+        <div class="form-group">
+          <label>URL hình ảnh banner *</label>
+          <input formControlName="url" placeholder="https://... hoặc /assets/banner-1.jpg">
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Đường dẫn khi nhấp (Link)</label>
+            <input formControlName="linkUrl" placeholder="/catalog">
+          </div>
+          <div class="form-group">
+            <label>Thứ tự hiển thị</label>
+            <input type="number" formControlName="sortOrder" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nội dung phụ đề</label>
+          <textarea formControlName="content" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="bannerModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveBanner()">Lưu Banner</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 11. CUSTOMER DETAIL & ADDRESS BOOK MODAL -->
+@if (customerDetailModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <div>
+          <h3>Sổ địa chỉ của {{ selectedCustomerDetail()?.fullName }}</h3>
+          <span class="text-muted">{{ selectedCustomerDetail()?.phone }} · {{ selectedCustomerDetail()?.email }}</span>
+        </div>
+        <button type="button" class="close-btn" (click)="customerDetailModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body">
+        <h4>Danh sách địa chỉ giao hàng đã lưu:</h4>
+        <div class="address-cards">
+          @for (addr of selectedCustomerDetail()?.addresses; track addr.id) {
+            <div class="address-card" [class.default]="addr.isDefault">
+              <div class="addr-top">
+                <strong>{{ addr.recipientName }}</strong> ({{ addr.phone }})
+                @if (addr.isDefault) { <span class="badge badge-success">Mặc định</span> }
+              </div>
+              <p class="addr-line">{{ addr.line1 }}</p>
+              <p class="addr-sub">{{ addr.ward }}, {{ addr.district }}, {{ addr.province }}</p>
+            </div>
+          } @empty {
+            <p class="text-muted">Khách hàng chưa có địa chỉ lưu.</p>
+          }
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="customerDetailModalOpen.set(false)">Đóng</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 12. CREATE EXCHANGE MODAL -->
+@if (exchangeModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-md">
+      <div class="modal-header">
+        <h3>Tạo phiếu Đổi hàng (Exchange)</h3>
+        <button type="button" class="close-btn" (click)="exchangeModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="exchangeForm">
+        <div class="form-group">
+          <label>Chọn sản phẩm mới muốn đổi sang *</label>
+          <select formControlName="productDetailId">
+            <option [ngValue]="null">-- Chọn biến thể màu/size --</option>
+            @for (p of products(); track p.id) {
+              @for (v of p.variants; track v.id) {
+                <option [value]="v.id">{{ p.name }} - {{ v.color }} ({{ v.size }}) - Giá: {{ v.price.toLocaleString('vi-VN') }}₫ (Tồn: {{ v.stock }})</option>
+              }
+            }
+          </select>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Số lượng đổi *</label>
+            <input type="number" formControlName="quantity" min="1">
+          </div>
+          <div class="form-group">
+            <label>Đơn giá tính đổi (₫) *</label>
+            <input type="number" formControlName="unitPrice" min="0">
+          </div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Tên người nhận đổi</label>
+            <input formControlName="shipName" placeholder="Tên khách hàng">
+          </div>
+          <div class="form-group">
+            <label>SĐT người nhận</label>
+            <input formControlName="shipPhone" placeholder="SĐT">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Địa chỉ nhận hàng đổi</label>
+          <input formControlName="shipAddress" placeholder="Số nhà, đường, quận/huyện...">
+        </div>
+        <div class="form-group">
+          <label>Ghi chú đổi hàng</label>
+          <input formControlName="note" placeholder="VD: Khách đổi sang size L do mặc chật">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="exchangeModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveExchange()">Lưu phiếu đổi hàng</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- 13. ROLE MODAL -->
+@if (roleModalOpen()) {
+  <div class="modal-backdrop">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h3>Thêm vai trò người dùng (Role)</h3>
+        <button type="button" class="close-btn" (click)="roleModalOpen.set(false)">✕</button>
+      </div>
+      <div class="modal-body" [formGroup]="roleForm">
+        <div class="form-group">
+          <label>Mã vai trò (viết hoa) *</label>
+          <input formControlName="name" placeholder="VD: WAREHOUSE, CASHIER, MANAGER">
+        </div>
+        <div class="form-group">
+          <label>Mô tả chức năng</label>
+          <textarea formControlName="description" rows="2" placeholder="VD: Quản lý xuất nhập tồn và kiểm kê kho"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="roleModalOpen.set(false)">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveRole()">Tạo vai trò</button>
+      </div>
+    </div>
+  </div>
+}

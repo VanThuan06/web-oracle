@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: newmen-backend
+    ports:
+      - "8188:8188"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - PORT=8188
+      - APP_CORS_ORIGINS=http://localhost:4220,http://127.0.0.1:4220,http://localhost:8188
+      - NEWMEN_DEMO_ADMIN_EMAIL=admin@newmen.local
+      - NEWMEN_DEMO_ADMIN_PASSWORD=ChangeMe123!
+    volumes:
+      - backend-uploads:/app/uploads
+      - backend-media:/app/media
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8188/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    restart: unless-stopped
+    networks:
+      - newmen-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: newmen-frontend
+    ports:
+      - "4220:4220"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - newmen-net
+
+networks:
+  newmen-net:
+    driver: bridge
+
+volumes:
+  backend-uploads:
+  backend-media:

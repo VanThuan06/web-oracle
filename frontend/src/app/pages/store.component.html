@@ -1,0 +1,230 @@
+<section class="hero-shell">
+  <div class="hero-copy">
+    <div class="eyebrow"><span class="eyebrow-line"></span> BỘ SƯU TẬP 2026 · NEWMEN STORE</div>
+    <h1>Đúng phom.<br><em>Đúng chất.</em></h1>
+    <p>Những chiếc áo nam được hoàn thiện vừa vặn cho nhịp sống hiện đại — từ công sở chỉn chu đến những buổi hẹn hò đáng nhớ.</p>
+    <div class="hero-cta-group">
+      <a class="button button-dark" href="#catalog">Khám phá sản phẩm <span>↓</span></a>
+      <button type="button" class="button button-ai-hero" (click)="openAiModal()">
+        <span>✨</span> Trợ lý AI Stylist
+      </button>
+    </div>
+    <div class="hero-footnote">
+      <span class="hero-asterisk">✳</span>
+      <span>Chất liệu Cotton & Linen chọn lọc<br><strong>Thoải mái & bền màu</strong></span>
+      <span class="hero-footnote-rule"></span>
+      <span>Thiết kế phom chuẩn người Việt<br><strong>Dễ mặc, dễ phối đồ</strong></span>
+    </div>
+  </div>
+  <div class="hero-visual" aria-label="Bộ sưu tập áo nam NewMen">
+    <div class="hero-sun"></div><div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
+    <svg class="hero-shirt" viewBox="0 0 330 420" role="img" aria-label="Minh họa áo sơ mi màu xanh rêu">
+      <path d="M106 44 55 62 15 162l56 25 20-42 2 225h145l2-225 20 42 56-25-40-100-51-18-34 30-29-10-27 10z" fill="#24463d"/>
+      <path d="m117 48 48 58 48-58-29-13-19 21-19-21z" fill="#d8d0bd"/>
+      <path d="m165 106 10 18-10 194-10-194z" fill="#d8d0bd"/>
+      <path d="M82 202h42v42H82zm98 0h42v42h-42z" fill="#31574b"/>
+      <circle cx="169" cy="150" r="2.7" fill="#d5c6a3"/><circle cx="168" cy="183" r="2.7" fill="#d5c6a3"/><circle cx="167" cy="216" r="2.7" fill="#d5c6a3"/>
+    </svg>
+    <div class="visual-label"><span>01 / 06</span><span>THE EVERYDAY EDIT</span></div>
+    <div class="visual-stamp">MẶC<br><i>chất</i></div>
+  </div>
+</section>
+
+<section class="benefits" aria-label="Ưu điểm mua sắm">
+  <div><span class="benefit-icon">01</span><span><strong>Vải tuyển chọn cao cấp</strong><small>Chạm mềm mịn, chống nhăn tự nhiên</small></span></div>
+  <div><span class="benefit-icon">02</span><span><strong>Đổi size tại nhà trong 7 ngày</strong><small>Miễn phí 100% đổi trả</small></span></div>
+  <div><span class="benefit-icon">03</span><span><strong>Giao hàng hỏa tốc toàn quốc</strong><small>Kiểm tra hàng trước khi thanh toán</small></span></div>
+  <div><span class="benefit-icon">04</span><span><strong>Tư vấn chọn size thông minh</strong><small>Bảng tính size chuẩn 99%</small></span></div>
+</section>
+
+@if (promotions().length) {
+  <section class="promo-ribbon" aria-label="Ưu đãi đang áp dụng">
+    <div class="promo-inner">
+      <span>✳ CHƯƠNG TRÌNH KHUYẾN MÃI ĐẶC BIỆT</span>
+      @for (promotion of promotions().slice(0, 2); track promotion.id) {
+        <div class="promo-tag">
+          <strong>{{ promotion.percentOff }}% OFF</strong>
+          <span>{{ promotion.name }} · Nhập mã: <b>{{ promotion.code }}</b></span>
+        </div>
+      }
+    </div>
+  </section>
+}
+
+<section class="catalog-section" id="catalog">
+  <div class="section-heading">
+    <div>
+      <div class="eyebrow"><span class="eyebrow-line"></span> CỬA HÀNG SẢN PHẨM</div>
+      <h2>Thời trang nam phong cách & lịch lãm.</h2>
+      <p>Tuyển tập áo sơ mi, polo, áo thun & áo khoác nam thiết kế may đo cao cấp.</p>
+    </div>
+    <div class="search-area">
+      <label class="sr-only" for="product-search">Tìm sản phẩm</label>
+      <input id="product-search" [(ngModel)]="query" (keyup.enter)="search()" placeholder="Tìm theo tên áo, mã SKU...">
+      <button type="button" (click)="search()" aria-label="Tìm kiếm">⌕</button>
+    </div>
+  </div>
+
+  @if (notice()) {
+    <div class="notice" role="status">
+      <span>{{ notice() }}</span>
+      <button type="button" aria-label="Đóng thông báo" (click)="notice.set('')">×</button>
+    </div>
+  }
+
+  <div class="catalog-layout">
+    <aside class="filters" aria-label="Bộ lọc sản phẩm">
+      <div class="filter-heading">
+        <span>Danh mục áo</span>
+        <button type="button" class="filter-clear" (click)="clearFilters()">Bỏ lọc ✕</button>
+      </div>
+
+      <button class="filter-item" [class.selected]="!categoryId()" (click)="selectCategory('')">
+        Tất cả sản phẩm <span>→</span>
+      </button>
+      @for (category of categories(); track category.id) {
+        <button class="filter-item" [class.selected]="categoryId() === '' + category.id" (click)="selectCategory('' + category.id)">
+          {{ category.name }} <span>→</span>
+        </button>
+      }
+
+      <div class="filter-divider"></div>
+
+      <!-- Banner Gợi ý AI Stylist -->
+      <div class="ai-filter-banner" (click)="openAiModal()">
+        <span class="ai-banner-tag">AI STYLIST ✨</span>
+        <strong>Bạn cần tư vấn phong cách?</strong>
+        <p>Gợi ý trang phục theo tuổi, chiều cao và mệnh phong thủy ngay ↗</p>
+      </div>
+
+      <div class="filter-divider"></div>
+
+      <p class="filter-note">Bạn chưa rõ số đo vừa vặn?</p>
+      <button type="button" class="size-guide-filter-btn" (click)="openSizeGuide()">
+        Bảng tính chọn size chuẩn <span>📏 ↗</span>
+      </button>
+    </aside>
+
+    <div class="product-area">
+      <div class="product-toolbar">
+        <span class="items-count-label">
+          @if (!loading()) {
+            Tìm thấy <b>{{ totalItems() }}</b> sản phẩm
+          } @else {
+            Đang tải dữ liệu sản phẩm...
+          }
+        </span>
+        <div class="toolbar-filters">
+          <label for="color-filter">Màu:
+            <select id="color-filter" [ngModel]="color()" (ngModelChange)="selectColor($event)">
+              <option value="">Tất cả</option>
+              @for (option of colors; track option) { <option [value]="option">{{ option }}</option> }
+            </select>
+          </label>
+          <label for="size-filter">Size:
+            <select id="size-filter" [ngModel]="sizeFilter()" (ngModelChange)="selectSize($event)">
+              <option value="">Tất cả</option>
+              @for (option of sizes; track option) { <option [value]="option">{{ option }}</option> }
+            </select>
+          </label>
+          <label for="sort-products">Xếp theo:
+            <select id="sort-products" [ngModel]="sort()" (ngModelChange)="selectSort($event)">
+              <option value="newest">Mới nhất</option>
+              <option value="bestseller">Bán chạy</option>
+              <option value="price-asc">Giá thấp đến cao</option>
+              <option value="price-desc">Giá cao đến thấp</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      @if (error()) {
+        <div class="state-card error-state" role="alert">
+          <span class="state-symbol">!</span>
+          <h3>Cửa hàng đang khởi động</h3>
+          <p>{{ error() }}</p>
+          <button type="button" class="button button-outline" (click)="loadProducts()">Thử tải lại</button>
+        </div>
+      } @else if (loading()) {
+        <div class="product-grid" aria-busy="true" aria-label="Đang tải sản phẩm">
+          @for (n of [1,2,3,4,5,6]; track n) {
+            <div class="skeleton">
+              <div class="skeleton-image"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
+            </div>
+          }
+        </div>
+      } @else if (!products().length) {
+        <div class="state-card">
+          <span class="state-symbol">⌕</span>
+          <h3>Chưa tìm thấy sản phẩm phù hợp</h3>
+          <p>Thử đổi từ khóa tìm kiếm hoặc chọn danh mục khác nhé.</p>
+          <button type="button" class="button button-outline" (click)="clearFilters()">Xem tất cả sản phẩm</button>
+        </div>
+      } @else {
+        <div class="product-grid">
+          @for (product of products(); track product.id) {
+            <article class="product-card">
+              <div class="product-art-wrap">
+                <a class="product-art" [routerLink]="['/product', product.slug]" [attr.aria-label]="'Xem ' + product.name">
+                  @if (image(product)) {
+                    <img [src]="image(product)" [alt]="product.name" loading="lazy">
+                  } @else {
+                    <div class="shirt-placeholder" aria-hidden="true">
+                      <svg viewBox="0 0 200 220"><path d="m68 20-35 13-28 72 35 15 14-30 1 105h110l1-105 14 30 35-15-28-72-35-13-23 18-19-5-19 5z"/><path d="m76 22 24 33 24-33-15-6-9 11-9-11z" class="collar"/></svg>
+                    </div>
+                  }
+                  <span class="product-badge">{{ product.isNew ? 'HÀNG MỚI' : (product.isBestSeller ? 'BÁN CHẠY' : 'NEWMEN') }}</span>
+                </a>
+                <button type="button" class="card-quick-view-btn" (click)="openQuickView(product, $event)" title="Xem nhanh sản phẩm này">
+                  <span>👁️</span> Xem nhanh
+                </button>
+              </div>
+
+              <div class="product-meta">
+                <span class="product-cat-label">{{ product.categoryName || 'BỘ SƯU TẬP' }}</span>
+                <div class="card-quick-actions">
+                  <button type="button" class="quick-view-pill-btn" (click)="openQuickView(product, $event)">Xem nhanh</button>
+                  <button type="button" class="quick-add" (click)="addQuick(product)" [attr.aria-label]="'Thêm ' + product.name + ' vào giỏ'" title="Thêm nhanh vào giỏ">+</button>
+                </div>
+              </div>
+
+              <a class="product-name" [routerLink]="['/product', product.slug]">{{ product.name }}</a>
+
+              <div class="product-price">
+                <strong>{{ product.price | currency:'VND':'symbol':'1.0-0':'vi' }}</strong>
+                @if (product.originalPrice && product.originalPrice > product.price) {
+                  <del>{{ product.originalPrice | currency:'VND':'symbol':'1.0-0':'vi' }}</del>
+                }
+              </div>
+
+              @if (product.variants.length) {
+                <div class="variant-peek">{{ product.variants.length }} biến thể · {{ variantColors(product) }}</div>
+              }
+            </article>
+          }
+        </div>
+
+        @if (totalPages() > 1) {
+          <nav class="pagination" aria-label="Phân trang">
+            <button type="button" [disabled]="page() === 0" (click)="changePage(-1)">← Trang trước</button>
+            <span>Trang <b>{{ page() + 1 }}</b> / {{ totalPages() }}</span>
+            <button type="button" [disabled]="page() + 1 >= totalPages()" (click)="changePage(1)">Trang sau →</button>
+          </nav>
+        }
+      }
+    </div>
+  </div>
+</section>
+
+<section class="editorial-band">
+  <div class="editorial-mark">NM<span>®</span></div>
+  <div>
+    <div class="eyebrow">ĐỊNH HÌNH PHONG CÁCH CỦA RIÊNG BẠN</div>
+    <h2>Không cần cầu kỳ.<br><em>Chỉ cần đúng với bạn.</em></h2>
+  </div>
+  <button type="button" (click)="openAiModal()" class="text-arrow-btn">
+    Trợ lý AI phối đồ theo phong cách <span>✨ ↗</span>
+  </button>
+</section>

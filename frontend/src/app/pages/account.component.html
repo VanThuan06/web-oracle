@@ -1,0 +1,61 @@
+<section class="account-page">
+  @if (loading()) { <div class="account-loading" aria-busy="true">Đang tải thông tin tài khoản...</div> }
+  @else if (!user()) {
+    <div class="auth-layout"><div class="auth-story"><div class="eyebrow"><span class="eyebrow-line"></span> NEWWMEN · THÀNH VIÊN</div><div class="story-mark">NM<span>®</span></div><h1>Phong cách<br><em>là của bạn.</em></h1><p>Tạo tài khoản để theo dõi đơn hàng, lưu địa chỉ giao hàng và nhận những gợi ý dành riêng cho bạn.</p><div class="story-note">“Mặc đúng với mình — tự tin theo cách của mình.”</div></div>
+      <div class="auth-card"><div class="auth-tabs"><button type="button" [class.active]="!registerMode()" (click)="registerMode.set(false)">Đăng nhập</button><button type="button" [class.active]="registerMode()" (click)="registerMode.set(true)">Tạo tài khoản</button></div><div class="auth-heading"><div class="eyebrow"><span class="eyebrow-line"></span> {{ registerMode() ? 'BẮT ĐẦU HÀNH TRÌNH' : 'CHÀO MỪNG TRỞ LẠI' }}</div><h2>{{ registerMode() ? 'Tạo tài khoản.' : 'Đăng nhập.' }}</h2><p>{{ registerMode() ? 'Chỉ mất một phút để trở thành thành viên NewMen.' : 'Đăng nhập để quản lý đơn hàng và thông tin của bạn.' }}</p></div>
+        @if (error()) { <div class="form-error" role="alert">{{ error() }}</div> } @if (notice()) { <div class="form-success" role="status">{{ notice() }}</div> }
+        <form [formGroup]="authForm" (ngSubmit)="submitAuth()" novalidate>
+          @if (registerMode()) { <label>Họ và tên<input formControlName="fullName" autocomplete="name" placeholder="Tên của bạn"></label> }
+          <label>Email<input type="email" formControlName="email" autocomplete="email" placeholder="ban@example.com"></label>
+          @if (registerMode()) { <label>Số điện thoại <span class="optional">(không bắt buộc)</span><input type="tel" formControlName="phone" autocomplete="tel" placeholder="09xx xxx xxx"></label> }
+          <label>Mật khẩu<input type="password" formControlName="password" [attr.autocomplete]="registerMode() ? 'new-password' : 'current-password'" placeholder="Tối thiểu 8 ký tự"></label>
+          <button type="submit" class="button button-dark auth-submit" [disabled]="busy()">{{ busy() ? 'Đang xử lý...' : (registerMode() ? 'Tạo tài khoản' : 'Đăng nhập') }} <span>↗</span></button>
+        </form><p class="auth-footnote">Bạn có thể đặt hàng mà không cần tài khoản. <a routerLink="/catalog">Tiếp tục mua sắm</a></p>
+      </div></div>
+  } @else {
+    <div class="member-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> KHÔNG GIAN CỦA BẠN</div><h1>Xin chào, {{ user()?.fullName }}.</h1><p>Quản lý thông tin và theo dõi hành trình đơn hàng của bạn.</p></div><button type="button" class="sign-out" (click)="signOut()">Đăng xuất ↗</button></div>
+    @if (error()) { <div class="form-error" role="alert">{{ error() }}</div> } @if (notice()) { <div class="form-success" role="status">{{ notice() }}</div> }
+    <div class="member-layout"><nav class="member-nav" aria-label="Khu vực thành viên"><button [class.active]="tab() === 'orders'" (click)="tab.set('orders')">Đơn hàng <span>{{ orders().length }}</span></button><button [class.active]="tab() === 'profile'" (click)="tab.set('profile')">Hồ sơ</button><button [class.active]="tab() === 'addresses'" (click)="tab.set('addresses')">Địa chỉ <span>{{ addresses().length }}</span></button><a routerLink="/catalog">Tiếp tục mua sắm <span>↗</span></a></nav>
+      <div class="member-content">
+        @if (tab() === 'orders') { <section><div class="content-heading"><div><span class="eyebrow-small">LỊCH SỬ MUA SẮM</span><h2>Đơn hàng của tôi</h2></div><span class="count-pill">{{ orders().length }} đơn</span></div>
+          @if (!orders().length) { <div class="member-empty"><span>01</span><h3>Chưa có đơn hàng nào</h3><p>Chiếc áo đầu tiên đang chờ bạn khám phá.</p><a routerLink="/catalog">Khám phá sản phẩm ↗</a></div> }
+          @else { <div class="order-list">
+            @for (order of orders(); track order.id) {
+              <article class="order-card">
+                <div class="order-card-top"><div><small>MÃ ĐƠN HÀNG</small><strong>{{ order.code }}</strong></div><span class="order-status" [class.status-complete]="order.status === 'COMPLETED'" [class.status-cancelled]="order.status === 'CANCELLED'">{{ statusLabel(order.status) }}</span></div>
+                <div class="order-card-bottom"><span>{{ order.createdAt | date:'dd/MM/yyyy' }} · {{ order.channel === 'POS' ? 'Tại cửa hàng' : 'Mua trực tuyến' }}</span><strong>{{ order.total | currency:'VND':'symbol':'1.0-0':'vi' }}</strong></div>
+                <button type="button" class="order-detail-toggle" (click)="toggleOrderDetails(order)">{{ selectedOrder()?.id === order.id ? 'Ẩn chi tiết −' : 'Theo dõi đơn hàng +' }}</button>
+                @if (order.status === 'COMPLETED') {
+                  @if (returnRequestedOrderIds().includes(order.id)) { <p class="return-confirmation" role="status">Yêu cầu đổi trả đã được gửi.</p> }
+                  @else { <button type="button" class="return-trigger" (click)="toggleReturnForm(order.id)">{{ returnRequestOrderId() === order.id ? 'Đóng yêu cầu đổi trả −' : 'Yêu cầu đổi trả +' }}</button> }
+                  @if (returnRequestOrderId() === order.id) { <form class="return-form" [formGroup]="returnForm" (ngSubmit)="submitReturnRequest(order.id)"><label [attr.for]="'return-reason-' + order.id">Lý do đổi trả</label><textarea [id]="'return-reason-' + order.id" formControlName="reason" rows="3" maxlength="500" placeholder="Mô tả ngắn gọn lý do bạn muốn đổi hoặc trả sản phẩm"></textarea><small>Ít nhất 8 ký tự, tối đa 500 ký tự.</small><button type="submit" [disabled]="returnSubmittingOrderId() === order.id">{{ returnSubmittingOrderId() === order.id ? "Đang gửi..." : "Gửi yêu cầu" }}</button></form> }
+                }
+                @if (selectedOrder(); as detail) {
+                  @if (detail.id === order.id) {
+                    <div class="order-detail">
+                      <div class="detail-lines"><h3>Sản phẩm</h3>
+                        @for (line of detail.items || []; track $index) {
+                          <div class="detail-line"><span>{{ line.quantity }} × {{ line.productName }}<small>{{ line.color }} · {{ line.size }}</small></span><strong>{{ line.lineTotal ?? line.unitPrice * line.quantity | currency:'VND':'symbol':'1.0-0':'vi' }}</strong></div>
+                          @if (order.status === 'COMPLETED' && line.productId) {
+                            <button type="button" class="review-trigger" (click)="openReview(line.productId!)">Viết đánh giá</button>
+                            @if (reviewProductId() === line.productId) {
+                              <form class="review-form" [formGroup]="reviewForm" (ngSubmit)="submitReview(order.id)"><label>Đánh giá <select formControlName="rating"><option [ngValue]="5">5 sao</option><option [ngValue]="4">4 sao</option><option [ngValue]="3">3 sao</option><option [ngValue]="2">2 sao</option><option [ngValue]="1">1 sao</option></select></label><label>Chia sẻ trải nghiệm <textarea formControlName="content" rows="2" maxlength="500"></textarea></label><button type="submit">Gửi đánh giá</button></form>
+                            }
+                          }
+                        }
+                        @if (!detail.items?.length) { <small>Chi tiết sản phẩm sẽ được cập nhật tại đây.</small> }
+                      </div>
+                      <div class="timeline"><h3>Tiến trình</h3>@for (event of detail.history || []; track $index) { <div class="timeline-event"><i></i><span><strong>{{ statusLabel(event.nextStatus) }}</strong><small>{{ event.createdAt | date:'dd/MM/yyyy HH:mm' }}@if (event.changedBy) { · {{ event.changedBy }} }</small></span></div> } @if (!detail.history?.length) { <small>Đơn hàng đã được ghi nhận.</small> }</div>
+                    </div>
+                  }
+                }
+              </article>
+            }
+          </div> }
+        </section> }
+        @if (tab() === 'profile') { <section><div class="content-heading"><div><span class="eyebrow-small">THÔNG TIN CÁ NHÂN</span><h2>Hồ sơ của bạn</h2></div></div><form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="profile-form"><label>Họ và tên<input formControlName="fullName" autocomplete="name"></label><label>Email<input [value]="user()?.email" disabled></label><label>Số điện thoại<input formControlName="phone" autocomplete="tel"></label><button class="button button-dark" type="submit" [disabled]="busy()">Lưu thay đổi <span>↗</span></button></form></section> }
+        @if (tab() === 'addresses') { <section><div class="content-heading"><div><span class="eyebrow-small">GIAO HÀNG THUẬN TIỆN</span><h2>Sổ địa chỉ</h2></div></div><div class="address-grid">@for (address of addresses(); track address.id) { <article class="address-card"><div><strong>{{ address.recipientName }}</strong>@if (address.isDefault) { <span class="default-pill">Mặc định</span> }</div><p>{{ address.phone }}<br>{{ address.line1 }}, {{ address.ward ? address.ward + ', ' : '' }}{{ address.district }}, {{ address.province }}</p><button type="button" (click)="editAddress(address)">Sửa</button><button type="button" (click)="deleteAddress(address.id)">Xóa địa chỉ</button></article> }</div><form [formGroup]="addressForm" (ngSubmit)="addAddress()" class="address-form"><h3>{{ editingAddress() ? "Cập nhật địa chỉ" : "Thêm địa chỉ mới" }}</h3><div class="form-grid"><label>Người nhận<input formControlName="recipientName"></label><label>Điện thoại<input formControlName="phone"></label><label class="full">Địa chỉ cụ thể<input formControlName="line1"></label><label>Phường / xã<input formControlName="ward"></label><label>Quận / huyện<input formControlName="district"></label><label>Tỉnh / thành phố<input formControlName="province"></label></div><button class="button button-dark" type="submit">{{ editingAddress() ? "Lưu địa chỉ" : "Thêm địa chỉ" }} <span>↗</span></button>@if (editingAddress()) { <button class="address-cancel" type="button" (click)="cancelAddressEdit()">Hủy</button> }</form></section> }
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:newmen;MODE=Oracle;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+app:
+  seed:
+    enabled: true
+    admin-email: ${NEWMEN_DEMO_ADMIN_EMAIL:admin@newmen.local}
+    admin-password: ${NEWMEN_DEMO_ADMIN_PASSWORD:ChangeMe123!}
+

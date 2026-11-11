@@ -1,0 +1,20 @@
+# Java / Maven
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Angular / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Local state and uploads
+uploads/
+*.mv.db
+*.trace.db
+.env
+.env.*
+!.env.example
+
+# Workspace scratch
+work/
+outputs/
