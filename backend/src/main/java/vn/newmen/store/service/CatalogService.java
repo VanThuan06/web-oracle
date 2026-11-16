@@ -54,9 +54,8 @@ public class CatalogService {
         }
         String normalizedSort = sort == null ? "newest" : sort.toLowerCase(Locale.ROOT);
         Pageable pageable = switch (normalizedSort) {
-            case "price-asc", "price_asc" -> PageRequest.of(page, sizePerPage);
-            case "price-desc", "price_desc" -> PageRequest.of(page, sizePerPage);
-            case "bestseller", "best-seller" -> PageRequest.of(page, sizePerPage);
+            case "price-asc", "price_asc" -> PageRequest.of(page, sizePerPage, Sort.by(Sort.Order.asc("originalPrice"), Sort.Order.desc("createdAt")));
+            case "price-desc", "price_desc" -> PageRequest.of(page, sizePerPage, Sort.by(Sort.Order.desc("originalPrice"), Sort.Order.desc("createdAt")));
             case "name", "name_asc" -> PageRequest.of(page, sizePerPage, Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id")));
             case "oldest" -> PageRequest.of(page, sizePerPage, Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id")));
             default -> PageRequest.of(page, sizePerPage, Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
@@ -64,12 +63,45 @@ public class CatalogService {
         String normalizedQuery = blankToNull(query);
         String normalizedColor = blankToNull(color);
         String normalizedSize = blankToNull(size);
-        Page<Product> result = switch (normalizedSort) {
-            case "price-asc", "price_asc" -> products.searchPriceAscending(normalizedQuery, categoryId, normalizedColor, normalizedSize, pageable);
-            case "price-desc", "price_desc" -> products.searchPriceDescending(normalizedQuery, categoryId, normalizedColor, normalizedSize, pageable);
-            case "bestseller", "best-seller" -> products.searchBestsellers(normalizedQuery, categoryId, normalizedColor, normalizedSize, pageable);
-            default -> products.search(normalizedQuery, categoryId, normalizedColor, normalizedSize, pageable);
+
+        org.springframework.data.jpa.domain.Specification<Product> spec = (root, q, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> predicates = new java.util.ArrayList<>();
+            predicates.add(cb.isTrue(root.get("active")));
+            predicates.add(cb.isTrue(root.get("status")));
+            if (normalizedQuery != null && !normalizedQuery.isBlank()) {
+                String pattern = "%" + normalizedQuery.trim().toLowerCase(Locale.ROOT) + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("name")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("code")), pattern, '\\')
+                ));
+            }
+            if (categoryId != null) {
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            }
+            if (normalizedColor != null && !normalizedColor.isBlank()) {
+                jakarta.persistence.criteria.Subquery<Long> sub = q.subquery(Long.class);
+                jakarta.persistence.criteria.Root<ProductVariant> v = sub.from(ProductVariant.class);
+                sub.select(v.get("id")).where(
+                    cb.equal(v.get("product"), root),
+                    cb.isTrue(v.get("active")),
+                    cb.equal(cb.lower(v.get("color")), normalizedColor.trim().toLowerCase(Locale.ROOT))
+                );
+                predicates.add(cb.exists(sub));
+            }
+            if (normalizedSize != null && !normalizedSize.isBlank()) {
+                jakarta.persistence.criteria.Subquery<Long> sub = q.subquery(Long.class);
+                jakarta.persistence.criteria.Root<ProductVariant> v = sub.from(ProductVariant.class);
+                sub.select(v.get("id")).where(
+                    cb.equal(v.get("product"), root),
+                    cb.isTrue(v.get("active")),
+                    cb.equal(cb.lower(v.get("size")), normalizedSize.trim().toLowerCase(Locale.ROOT))
+                );
+                predicates.add(cb.exists(sub));
+            }
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
+
+        Page<Product> result = products.findAll(spec, pageable);
         return new PageResponse<>(toResponses(result.getContent()), result.getNumber(),
             result.getSize(), result.getTotalElements(), result.getTotalPages());
     }

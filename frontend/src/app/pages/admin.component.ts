@@ -834,7 +834,7 @@ export class AdminComponent implements OnInit, AfterViewInit {
         this.fastAttributeModalOpen.set(false);
         this.loadCatalogAttributes();
       },
-      error: () => this.showError('Không thể thêm thuộc tính.'),
+      error: (err) => this.showError('Không thể thêm thuộc tính.', err),
     });
   }
 
@@ -1231,7 +1231,7 @@ export class AdminComponent implements OnInit, AfterViewInit {
     this.currentAttributeType.set(type);
     this.api.getAttributes(type).subscribe({
       next: (res) => this.attributeList.set(res.data ?? []),
-      error: () => this.showError('Không thể tải thuộc tính.'),
+      error: (err) => this.showError('Không thể tải thuộc tính.', err),
     });
   }
 
@@ -1292,7 +1292,7 @@ export class AdminComponent implements OnInit, AfterViewInit {
         this.loadAttributes();
         this.loadCatalogAttributes();
       },
-      error: () => this.showError('Không thể xóa thuộc tính đang được gắn vào sản phẩm.'),
+      error: (err) => this.showError('Không thể xóa thuộc tính đang được gắn vào sản phẩm.', err),
     });
   }
 
@@ -1573,11 +1573,23 @@ export class AdminComponent implements OnInit, AfterViewInit {
   }
 
   showError(msg: string, err?: unknown): void {
-    if (err && typeof err === 'object' && 'status' in err) {
-      const status = (err as { status: number }).status;
-      if (status === 401 || status === 403) {
+    if (err && typeof err === 'object') {
+      const e = err as { status?: number; error?: any };
+      if (e.status === 401 || e.status === 403) {
         this.user.set(null);
         this.error.set('Phiên đăng nhập đã hết hạn hoặc chưa xác thực. Vui lòng đăng nhập lại bên dưới.');
+        return;
+      }
+      let detail = '';
+      if (typeof e.error === 'string') {
+        detail = e.error;
+      } else if (e.error?.message) {
+        detail = e.error.message;
+      } else if (e.error?.error?.message) {
+        detail = e.error.error.message;
+      }
+      if (detail) {
+        this.error.set(`${msg} (${detail})`);
         return;
       }
     }

@@ -110,6 +110,7 @@ public class AdminAttributeController {
         if (name.isBlank() && (req.code() == null || req.code().isBlank())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tên thuộc tính không được để trống");
         }
+        if (name.length() > 120) name = name.substring(0, 120);
         boolean st = req.status() == null || req.status();
 
         AttributeItemResponse resp = switch (normalize(type)) {
@@ -121,7 +122,13 @@ public class AdminAttributeController {
                 Category cat = new Category();
                 cat.name = name;
                 cat.nameCategory = name;
-                cat.slug = req.code() != null && !req.code().isBlank() ? req.code().trim().toLowerCase(Locale.ROOT) : slugify(name);
+                String slugBase = req.code() != null && !req.code().isBlank() ? req.code().trim().toLowerCase(Locale.ROOT) : slugify(name);
+                String slug = slugBase;
+                int suffix = 1;
+                while (categories.findBySlug(slug).isPresent()) {
+                    slug = slugBase + "-" + suffix++;
+                }
+                cat.slug = slug.length() > 150 ? slug.substring(0, 150) : slug;
                 cat.active = st;
                 cat.status = st;
                 if (req.parentId() != null) {
@@ -132,12 +139,18 @@ public class AdminAttributeController {
                     saved.originCategory != null ? saved.originCategory.nameCategoryF : null, saved.status);
             }
             case "colors" -> {
-                Color c = colors.save(new Color(name, req.code() != null ? req.code().trim() : req.extra(), st));
+                String colorName = name.length() > 60 ? name.substring(0, 60) : name;
+                String hex = req.code() != null && !req.code().isBlank() ? req.code().trim() : req.extra();
+                if (hex != null && hex.length() > 20) hex = hex.substring(0, 20);
+                Color c = colors.save(new Color(colorName, hex, st));
                 yield new AttributeItemResponse(c.id, c.nameColor, c.codeHex, null, c.status);
             }
             case "sizes" -> {
                 String code = req.code() != null && !req.code().isBlank() ? req.code().trim() : name;
-                Size s = sizes.save(new Size(code, req.extra() != null ? req.extra() : req.name(), st));
+                if (code.length() > 20) code = code.substring(0, 20);
+                String desc = req.extra() != null ? req.extra().trim() : req.name();
+                if (desc != null && desc.length() > 255) desc = desc.substring(0, 255);
+                Size s = sizes.save(new Size(code, desc, st));
                 yield new AttributeItemResponse(s.id, s.code, s.code, s.description, s.status);
             }
             case "materials" -> {
@@ -175,15 +188,25 @@ public class AdminAttributeController {
         return switch (normalize(type)) {
             case "origin-categories", "origincategories" -> {
                 OriginCategory oc = originCategories.findById(id).orElseThrow(() -> notFound(id));
-                if (req.name() != null) oc.nameCategoryF = req.name().trim();
+                if (req.name() != null && !req.name().trim().isBlank()) {
+                    String n = req.name().trim();
+                    oc.nameCategoryF = n.length() > 120 ? n.substring(0, 120) : n;
+                }
                 if (req.status() != null) oc.status = req.status();
                 originCategories.save(oc);
                 yield new AttributeItemResponse(oc.id, oc.nameCategoryF, null, null, oc.status);
             }
             case "categories" -> {
                 Category c = categories.findById(id).orElseThrow(() -> notFound(id));
-                if (req.name() != null) { c.name = req.name().trim(); c.nameCategory = req.name().trim(); }
-                if (req.code() != null) c.slug = req.code().trim().toLowerCase(Locale.ROOT);
+                if (req.name() != null && !req.name().trim().isBlank()) {
+                    String n = req.name().trim();
+                    c.name = n.length() > 120 ? n.substring(0, 120) : n;
+                    c.nameCategory = c.name;
+                }
+                if (req.code() != null && !req.code().trim().isBlank()) {
+                    String s = req.code().trim().toLowerCase(Locale.ROOT);
+                    c.slug = s.length() > 150 ? s.substring(0, 150) : s;
+                }
                 if (req.status() != null) { c.status = req.status(); c.active = req.status(); }
                 if (req.parentId() != null) {
                     originCategories.findById(req.parentId()).ifPresent(p -> c.originCategory = p);
@@ -194,52 +217,81 @@ public class AdminAttributeController {
             }
             case "colors" -> {
                 Color c = colors.findById(id).orElseThrow(() -> notFound(id));
-                if (req.name() != null) c.nameColor = req.name().trim();
-                if (req.code() != null) c.codeHex = req.code().trim();
+                if (req.name() != null && !req.name().trim().isBlank()) {
+                    String n = req.name().trim();
+                    c.nameColor = n.length() > 60 ? n.substring(0, 60) : n;
+                }
+                if (req.code() != null) {
+                    String h = req.code().trim();
+                    c.codeHex = h.length() > 20 ? h.substring(0, 20) : h;
+                }
                 if (req.status() != null) c.status = req.status();
                 colors.save(c);
                 yield new AttributeItemResponse(c.id, c.nameColor, c.codeHex, null, c.status);
             }
             case "sizes" -> {
                 Size s = sizes.findById(id).orElseThrow(() -> notFound(id));
-                if (req.code() != null) s.code = req.code().trim();
-                if (req.name() != null && (req.code() == null || req.code().isBlank())) s.code = req.name().trim();
-                if (req.extra() != null) s.description = req.extra();
+                if (req.code() != null && !req.code().trim().isBlank()) {
+                    String cd = req.code().trim();
+                    s.code = cd.length() > 20 ? cd.substring(0, 20) : cd;
+                } else if (req.name() != null && !req.name().trim().isBlank()) {
+                    String nm = req.name().trim();
+                    s.code = nm.length() > 20 ? nm.substring(0, 20) : nm;
+                }
+                if (req.extra() != null) {
+                    String ex = req.extra().trim();
+                    s.description = ex.length() > 255 ? ex.substring(0, 255) : ex;
+                }
                 if (req.status() != null) s.status = req.status();
                 sizes.save(s);
                 yield new AttributeItemResponse(s.id, s.code, s.code, s.description, s.status);
             }
             case "materials" -> {
                 Material m = materials.findById(id).orElseThrow(() -> notFound(id));
-                if (req.name() != null) m.nameMaterial = req.name().trim();
+                if (req.name() != null && !req.name().trim().isBlank()) {
+                    String n = req.name().trim();
+                    m.nameMaterial = n.length() > 120 ? n.substring(0, 120) : n;
+                }
                 if (req.status() != null) m.status = req.status();
                 materials.save(m);
                 yield new AttributeItemResponse(m.id, m.nameMaterial, null, null, m.status);
             }
             case "collars" -> {
                 Collar c = collars.findById(id).orElseThrow(() -> notFound(id));
-                if (req.name() != null) c.nameCollar = req.name().trim();
+                if (req.name() != null && !req.name().trim().isBlank()) {
+                    String n = req.name().trim();
+                    c.nameCollar = n.length() > 120 ? n.substring(0, 120) : n;
+                }
                 if (req.status() != null) c.status = req.status();
                 collars.save(c);
                 yield new AttributeItemResponse(c.id, c.nameCollar, null, null, c.status);
             }
             case "designs" -> {
                 Design d = designs.findById(id).orElseThrow(() -> notFound(id));
-                if (req.name() != null) d.nameDesign = req.name().trim();
+                if (req.name() != null && !req.name().trim().isBlank()) {
+                    String n = req.name().trim();
+                    d.nameDesign = n.length() > 120 ? n.substring(0, 120) : n;
+                }
                 if (req.status() != null) d.status = req.status();
                 designs.save(d);
                 yield new AttributeItemResponse(d.id, d.nameDesign, null, null, d.status);
             }
             case "forms" -> {
                 Form f = forms.findById(id).orElseThrow(() -> notFound(id));
-                if (req.name() != null) f.nameForm = req.name().trim();
+                if (req.name() != null && !req.name().trim().isBlank()) {
+                    String n = req.name().trim();
+                    f.nameForm = n.length() > 120 ? n.substring(0, 120) : n;
+                }
                 if (req.status() != null) f.status = req.status();
                 forms.save(f);
                 yield new AttributeItemResponse(f.id, f.nameForm, null, null, f.status);
             }
             case "sleeves" -> {
                 Sleeve s = sleeves.findById(id).orElseThrow(() -> notFound(id));
-                if (req.name() != null) s.nameSleeve = req.name().trim();
+                if (req.name() != null && !req.name().trim().isBlank()) {
+                    String n = req.name().trim();
+                    s.nameSleeve = n.length() > 120 ? n.substring(0, 120) : n;
+                }
                 if (req.status() != null) s.status = req.status();
                 sleeves.save(s);
                 yield new AttributeItemResponse(s.id, s.nameSleeve, null, null, s.status);

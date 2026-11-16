@@ -1796,15 +1796,15 @@
       <div class="modal-body" [formGroup]="attributeForm">
         <div class="form-group">
           <label>Tên thuộc tính *</label>
-          <input formControlName="name" placeholder="VD: Xanh Navy, Cotton, Tay dài...">
+          <input formControlName="name" maxlength="100" placeholder="VD: Xanh Navy, Cotton, Tay dài...">
         </div>
         <div class="form-group">
           <label>Mã / Hex / Viết tắt</label>
-          <input formControlName="code" placeholder="VD: #000080 hoặc XL">
+          <input formControlName="code" maxlength="20" placeholder="VD: #000080 hoặc XL">
         </div>
         <div class="form-group">
           <label>Ghi chú / Thể loại cha</label>
-          <input formControlName="extra" placeholder="Mô tả bổ sung nếu có">
+          <input formControlName="extra" maxlength="200" placeholder="Mô tả bổ sung nếu có">
         </div>
       </div>
       <div class="modal-footer">

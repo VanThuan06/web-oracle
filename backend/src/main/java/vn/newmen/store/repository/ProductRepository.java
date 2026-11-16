@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import vn.newmen.store.domain.Product;
 
-public interface ProductRepository extends JpaRepository<Product, Long> {
+public interface ProductRepository extends JpaRepository<Product, Long>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<Product> {
     @EntityGraph(attributePaths = "category")
     Optional<Product> findBySlugAndActiveTrue(String slug);
 
@@ -25,8 +25,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("""
         select distinct p from Product p
         where p.active = true
-          and (:query is null or lower(p.name) like lower(concat('%', :query, '%'))
-               or lower(p.code) like lower(concat('%', :query, '%')))
+          and (:query is null or lower(p.name) like :query
+               or lower(p.code) like :query)
           and (:categoryId is null or p.category.id = :categoryId)
           and (:color is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.color) = lower(:color)))
           and (:size is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.size) = lower(:size)))
@@ -38,8 +38,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query(value = """
         select p from Product p
         where p.active = true
-          and (:query is null or lower(p.name) like lower(concat('%', :query, '%'))
-               or lower(p.code) like lower(concat('%', :query, '%')))
+          and (:query is null or lower(p.name) like :query
+               or lower(p.code) like :query)
           and (:categoryId is null or p.category.id = :categoryId)
           and (:color is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.color) = lower(:color)))
           and (:size is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.size) = lower(:size)))
@@ -47,8 +47,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         """, countQuery = """
         select count(p) from Product p
         where p.active = true
-          and (:query is null or lower(p.name) like lower(concat('%', :query, '%'))
-               or lower(p.code) like lower(concat('%', :query, '%')))
+          and (:query is null or lower(p.name) like :query
+               or lower(p.code) like :query)
           and (:categoryId is null or p.category.id = :categoryId)
           and (:color is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.color) = lower(:color)))
           and (:size is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.size) = lower(:size)))
@@ -60,8 +60,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query(value = """
         select p from Product p
         where p.active = true
-          and (:query is null or lower(p.name) like lower(concat('%', :query, '%'))
-               or lower(p.code) like lower(concat('%', :query, '%')))
+          and (:query is null or lower(p.name) like :query
+               or lower(p.code) like :query)
           and (:categoryId is null or p.category.id = :categoryId)
           and (:color is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.color) = lower(:color)))
           and (:size is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.size) = lower(:size)))
@@ -69,8 +69,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         """, countQuery = """
         select count(p) from Product p
         where p.active = true
-          and (:query is null or lower(p.name) like lower(concat('%', :query, '%'))
-               or lower(p.code) like lower(concat('%', :query, '%')))
+          and (:query is null or lower(p.name) like :query
+               or lower(p.code) like :query)
           and (:categoryId is null or p.category.id = :categoryId)
           and (:color is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.color) = lower(:color)))
           and (:size is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.size) = lower(:size)))
@@ -82,8 +82,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query(value = """
         select p from Product p
         where p.active = true
-          and (:query is null or lower(p.name) like lower(concat('%', :query, '%'))
-               or lower(p.code) like lower(concat('%', :query, '%')))
+          and (:query is null or lower(p.name) like :query
+               or lower(p.code) like :query)
           and (:categoryId is null or p.category.id = :categoryId)
           and (:color is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.color) = lower(:color)))
           and (:size is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.size) = lower(:size)))
@@ -91,8 +91,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         """, countQuery = """
         select count(p) from Product p
         where p.active = true
-          and (:query is null or lower(p.name) like lower(concat('%', :query, '%'))
-               or lower(p.code) like lower(concat('%', :query, '%')))
+          and (:query is null or lower(p.name) like :query
+               or lower(p.code) like :query)
           and (:categoryId is null or p.category.id = :categoryId)
           and (:color is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.color) = lower(:color)))
           and (:size is null or exists (select v.id from ProductVariant v where v.product = p and v.active = true and lower(v.size) = lower(:size)))
